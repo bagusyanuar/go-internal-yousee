@@ -1,9 +1,14 @@
 package route
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/bagusyanuar/go-internal-yousee/internal/http/controller"
+	"github.com/gofiber/fiber/v2"
+)
 
 type RouteConfig struct {
-	App *fiber.App
+	App            *fiber.App
+	HomeController *controller.HomeController
+	AuthController *controller.AuthController
 }
 
 func (c *RouteConfig) Setup() {
@@ -11,10 +16,6 @@ func (c *RouteConfig) Setup() {
 }
 
 func (c *RouteConfig) GuestRoute() {
-	c.App.Get("/", func(c *fiber.Ctx) error {
-		return c.JSON(&fiber.Map{
-			"app_name": "internal-yousee",
-			"version":  "1.0.1",
-		})
-	})
+	c.App.Get("/", c.HomeController.Index)
+	c.App.Get("/sign-in", c.AuthController.SignIn)
 }
