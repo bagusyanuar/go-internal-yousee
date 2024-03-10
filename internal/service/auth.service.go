@@ -2,13 +2,16 @@ package service
 
 import (
 	"context"
+	"errors"
 
+	"github.com/bagusyanuar/go-internal-yousee/internal/model"
 	"github.com/bagusyanuar/go-internal-yousee/internal/repositories"
+	"gorm.io/gorm"
 )
 
 type (
 	AuthService interface {
-		SignIn(ctx context.Context) (string, error)
+		SignIn(ctx context.Context, request *model.AuthRequest) (*model.AuthResponse, error)
 	}
 
 	auth struct {
@@ -17,12 +20,18 @@ type (
 )
 
 // SignIn implements AuthServiceUsecase.
-func (service *auth) SignIn(ctx context.Context) (string, error) {
-	user, err := service.AuthRepository.SignIn(ctx)
+func (service *auth) SignIn(ctx context.Context, request *model.AuthRequest) (*model.AuthResponse, error) {
+	username := request.Username
+	response := new(model.AuthResponse)
+	user, err := service.AuthRepository.SignIn(ctx, username)
 	if err != nil {
-		return "", err
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			return response, errors.New("user not found")
+		}
+		return response, err
 	}
-	return user.Username, nil
+	response.AccessToken = user.Username
+	return response, nil
 }
 
 func NewAuthService(authRepository repositories.AuthRepository) AuthService {

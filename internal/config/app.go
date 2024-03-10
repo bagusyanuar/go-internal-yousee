@@ -25,7 +25,7 @@ func Bootstrap(config *BootstrapConfig) {
 	authService := service.NewAuthService(authRepository)
 
 	homeController := controller.NewHomeController(config.Config)
-	authController := controller.NewAuthController(config.Config, authService)
+	authController := controller.NewAuthController(config.Config, authService, config.Log)
 	routeConfig := route.RouteConfig{
 		App:            config.App,
 		HomeController: homeController,
