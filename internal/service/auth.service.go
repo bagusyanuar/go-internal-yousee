@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 
+	"github.com/bagusyanuar/go-internal-yousee/common"
+	"github.com/bagusyanuar/go-internal-yousee/internal/entity"
 	"github.com/bagusyanuar/go-internal-yousee/internal/model"
 	"github.com/bagusyanuar/go-internal-yousee/internal/repositories"
+	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 )
 
@@ -16,6 +19,7 @@ type (
 
 	auth struct {
 		AuthRepository repositories.AuthRepository
+		JWT            *common.JWT
 	}
 )
 
@@ -30,12 +34,31 @@ func (service *auth) SignIn(ctx context.Context, request *model.AuthRequest) (*m
 		}
 		return response, err
 	}
-	response.AccessToken = user.Username
+
+	accessToken, err := service.createToken(service.JWT, user)
+
+	if err != nil {
+		return response, errors.New("failed to generate access token")
+	}
+	response.AccessToken = accessToken
 	return response, nil
 }
 
-func NewAuthService(authRepository repositories.AuthRepository) AuthService {
+func (service *auth) createToken(cfg *common.JWT, user *entity.User) (string, error) {
+	JWTSignInMethod := jwt.SigningMethodHS256
+	claims := common.JWTClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer: cfg.Issuer,
+		},
+		UserID: user.ID,
+	}
+	token := jwt.NewWithClaims(JWTSignInMethod, claims)
+	return token.SignedString([]byte(cfg.SignatureKey))
+}
+
+func NewAuthService(authRepository repositories.AuthRepository, jwt *common.JWT) AuthService {
 	return &auth{
 		AuthRepository: authRepository,
+		JWT:            jwt,
 	}
 }

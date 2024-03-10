@@ -1,17 +1,15 @@
 package entity
 
-import (
-	"time"
-)
+import "time"
 
-type User struct {
+type Type struct {
 	ID        uint64    `gorm:"column:id;primaryKey" json:"id"`
-	Email     string    `gorm:"column:email" json:"email"`
-	Username  string    `gorm:"column:username" json:"username"`
+	Name      string    `gorm:"column:name" json:"name"`
+	Icon      *string   `gorm:"column:icon" json:"username"`
 	CreatedAt time.Time `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at" json:"updated_at"`
 }
 
-func (u *User) TableName() string {
-	return "users"
+func (t *Type) TableName() string {
+	return "types"
 }

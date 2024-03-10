@@ -11,11 +11,14 @@ func main() {
 	log := config.NewLogger()
 	app := config.NewFiber()
 	db := config.NewDatabase(viperConfig, log)
+	jwt := config.NewJWT(viperConfig)
+
 	config.Bootstrap(&config.BootstrapConfig{
 		App:    app,
 		Config: viperConfig,
 		Log:    log,
 		DB:     db,
+		JWT:    jwt,
 	})
 
 	port := viperConfig.GetString("APP_PORT")
