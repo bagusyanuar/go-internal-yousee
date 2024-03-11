@@ -11,6 +11,7 @@ import (
 type (
 	TypeRepository interface {
 		FindAll(ctx context.Context) ([]entity.Type, error)
+		Create(ctx context.Context, entity *entity.Type) error
 	}
 
 	itemType struct {
@@ -19,11 +20,20 @@ type (
 	}
 )
 
+// Create implements TypeRepository.
+func (repository *itemType) Create(ctx context.Context, entity *entity.Type) error {
+	tx := repository.DB.WithContext(ctx)
+	if err := tx.Create(entity).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 // FindAll implements TypeRepository.
 func (repository *itemType) FindAll(ctx context.Context) ([]entity.Type, error) {
 	var types []entity.Type
 
-	tx := repository.DB.WithContext(ctx).Begin()
+	tx := repository.DB.WithContext(ctx)
 	if err := tx.Find(&types).Error; err != nil {
 		return nil, err
 	}

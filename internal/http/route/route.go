@@ -9,6 +9,7 @@ type RouteConfig struct {
 	App            *fiber.App
 	HomeController *controller.HomeController
 	AuthController *controller.AuthController
+	TypeController *controller.TypeController
 }
 
 func (c *RouteConfig) Setup() {
@@ -18,4 +19,6 @@ func (c *RouteConfig) Setup() {
 func (c *RouteConfig) GuestRoute() {
 	c.App.Get("/", c.HomeController.Index)
 	c.App.Post("/sign-in", c.AuthController.SignIn)
+	c.App.Get("/type", c.TypeController.FindAll)
+	c.App.Post("/type", c.TypeController.Create)
 }
