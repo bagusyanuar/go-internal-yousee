@@ -5,3 +5,8 @@ type APIResponse[T any] struct {
 	Data    T      `json:"data"`
 	Message string `json:"message"`
 }
+
+type PaginationQuery struct {
+	Page    int `json:"page"`
+	PerPage int `json:"per_page"`
+}

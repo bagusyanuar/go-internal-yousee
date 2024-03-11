@@ -6,19 +6,34 @@ import (
 )
 
 type RouteConfig struct {
-	App            *fiber.App
-	HomeController *controller.HomeController
-	AuthController *controller.AuthController
-	TypeController *controller.TypeController
+	App                *fiber.App
+	HomeController     *controller.HomeController
+	AuthController     *controller.AuthController
+	TypeController     *controller.TypeController
+	ProvinceController *controller.ProvinceController
 }
 
 func (c *RouteConfig) Setup() {
 	c.GuestRoute()
+	c.AuthRoute()
 }
 
 func (c *RouteConfig) GuestRoute() {
 	c.App.Get("/", c.HomeController.Index)
 	c.App.Post("/sign-in", c.AuthController.SignIn)
-	c.App.Get("/type", c.TypeController.FindAll)
-	c.App.Post("/type", c.TypeController.Create)
+
+}
+
+func (c *RouteConfig) AuthRoute() {
+
+	//media type routes
+	routeType := c.App.Group("/type")
+	routeType.Get("/", c.TypeController.FindAll)
+	routeType.Post("/", c.TypeController.Create)
+	routeType.Get("/:id", c.TypeController.FindByID)
+	routeType.Put("/:id", c.TypeController.Patch)
+	routeType.Delete("/:id/delete", c.TypeController.Delete)
+
+	routeProvince := c.App.Group("/province")
+	routeProvince.Get("/", c.ProvinceController.FindAll)
 }
