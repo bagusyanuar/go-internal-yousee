@@ -1,19 +1,33 @@
 package common
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/gofiber/fiber/v2"
+)
 
 type APIResponse[T any] struct {
 	Code    int    `json:"code"`
 	Data    T      `json:"data"`
 	Message string `json:"message"`
+	Meta    any    `json:"meta"`
 }
 
-func JSONSuccess(ctx *fiber.Ctx, message string, data any) error {
+type ResponseMap struct {
+	Message string
+	Data    any
+	Meta    any
+}
+
+func JSONSuccess(ctx *fiber.Ctx, mapResponse ResponseMap) error {
 	status := 200
+	message := "success"
+	if mapResponse.Message != "" {
+		message = mapResponse.Message
+	}
 	return ctx.Status(status).JSON(APIResponse[any]{
-		Data:    data,
+		Data:    mapResponse.Data,
 		Message: message,
 		Code:    status,
+		Meta:    mapResponse.Meta,
 	})
 }
 

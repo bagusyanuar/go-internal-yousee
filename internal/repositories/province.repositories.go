@@ -6,13 +6,14 @@ import (
 	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/entity"
 	"github.com/bagusyanuar/go-internal-yousee/internal/model"
+	"github.com/bagusyanuar/go-internal-yousee/internal/model/transformer"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 type (
 	ProvinceRepository interface {
-		FindAll(ctx context.Context, param string, paginateQuery model.PaginationQuery) ([]entity.Province, error)
+		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Province], error)
 	}
 
 	province struct {
@@ -22,25 +23,27 @@ type (
 )
 
 // FindAll implements ProvinceRepository.
-func (repository *province) FindAll(ctx context.Context, param string, paginateQuery model.PaginationQuery) ([]entity.Province, error) {
+func (repository *province) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Province], error) {
 	var provinces []entity.Province
 
+	metaPagination := new(model.MetaPagination)
 	tx := repository.DB.WithContext(ctx)
 
-	if param != "" {
-		q := "%" + param + "%"
+	if queryString.Query != "" {
+		q := "%" + queryString.Query + "%"
 		tx = tx.Where("name LIKE ?", q)
 	}
 
-	paginate := common.Pagination{
-		Limit: paginateQuery.PerPage,
-		Page:  paginateQuery.Page,
+	paginate := &common.Pagination{
+		Limit: queryString.QueryPagination.PerPage,
+		Page:  queryString.QueryPagination.Page,
 	}
-	if err := tx.Scopes(common.Paginate(provinces, &paginate, tx)).Find(&provinces).Error; err != nil {
-		return nil, err
+	if err := tx.Scopes(common.Paginate(provinces, paginate, tx)).Find(&provinces).Error; err != nil {
+		return model.Response[[]entity.Province]{}, err
 	}
-	repository.Log.Warnf("Total Rows : %+v", paginate.TotalRows)
-	return provinces, nil
+
+	metaPagination = transformer.ToMetaPagination(paginate)
+	return model.Response[[]entity.Province]{Data: provinces, Meta: metaPagination}, nil
 }
 
 func NewProvinceRepository(db *gorm.DB, log *logrus.Logger) ProvinceRepository {

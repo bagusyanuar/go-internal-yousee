@@ -21,7 +21,7 @@ func NewProvinceController(provinceService service.ProvinceService, log *logrus.
 }
 
 func (c *ProvinceController) FindAll(ctx *fiber.Ctx) error {
-	param := ctx.Query("param")
+	param := ctx.Query("name")
 	page := ctx.QueryInt("page")
 	perPage := ctx.QueryInt("per_page")
 
@@ -29,10 +29,19 @@ func (c *ProvinceController) FindAll(ctx *fiber.Ctx) error {
 		Page:    page,
 		PerPage: perPage,
 	}
-	res, err := c.ProvinceService.FindAll(ctx.UserContext(), param, pagination)
+
+	queryString := model.QueryString[string]{
+		Query:           param,
+		QueryPagination: pagination,
+	}
+	response, err := c.ProvinceService.FindAll(ctx.UserContext(), queryString)
 	if err != nil {
 		return common.JSONError(ctx, err.Error(), nil)
 	}
 
-	return common.JSONSuccess(ctx, "successfully show data types", res)
+	return common.JSONSuccess(ctx, common.ResponseMap{
+		Message: "successfully show provinces",
+		Data:    response.Data,
+		Meta:    response.Meta,
+	})
 }

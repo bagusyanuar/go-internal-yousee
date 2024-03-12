@@ -30,7 +30,10 @@ func (c *TypeController) FindAll(ctx *fiber.Ctx) error {
 		return common.JSONError(ctx, err.Error(), nil)
 	}
 
-	return common.JSONSuccess(ctx, "successfully show data types", res)
+	return common.JSONSuccess(ctx, common.ResponseMap{
+		Message: "successfully show types",
+		Data:    res,
+	})
 }
 
 func (c *TypeController) FindByID(ctx *fiber.Ctx) error {
@@ -43,7 +46,10 @@ func (c *TypeController) FindByID(ctx *fiber.Ctx) error {
 		}
 		return common.JSONError(ctx, err.Error(), nil)
 	}
-	return common.JSONSuccess(ctx, "successfull show data", res)
+	return common.JSONSuccess(ctx, common.ResponseMap{
+		Message: "successfully show type",
+		Data:    res,
+	})
 }
 
 func (c *TypeController) Create(ctx *fiber.Ctx) error {
@@ -67,7 +73,9 @@ func (c *TypeController) Create(ctx *fiber.Ctx) error {
 		return common.JSONError(ctx, err.Error(), nil)
 	}
 
-	return common.JSONSuccess(ctx, "successfully created", nil)
+	return common.JSONSuccess(ctx, common.ResponseMap{
+		Message: "successfully create media type",
+	})
 }
 
 func (c *TypeController) Patch(ctx *fiber.Ctx) error {
@@ -93,7 +101,9 @@ func (c *TypeController) Patch(ctx *fiber.Ctx) error {
 		return common.JSONError(ctx, err.Error(), nil)
 	}
 
-	return common.JSONSuccess(ctx, "successfully updated", nil)
+	return common.JSONSuccess(ctx, common.ResponseMap{
+		Message: "successfully patch media type",
+	})
 }
 
 func (c *TypeController) Delete(ctx *fiber.Ctx) error {
@@ -103,5 +113,7 @@ func (c *TypeController) Delete(ctx *fiber.Ctx) error {
 		return common.JSONError(ctx, err.Error(), nil)
 	}
 
-	return common.JSONSuccess(ctx, "successfully deleted", nil)
+	return common.JSONSuccess(ctx, common.ResponseMap{
+		Message: "successfully delete media type",
+	})
 }

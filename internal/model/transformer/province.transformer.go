@@ -11,3 +11,15 @@ func ProvinceToResponse(province *entity.Province) *model.ProvinceResponse {
 		Name: province.Name,
 	}
 }
+
+func ToProvinces(entities []entity.Province) []model.ProvinceResponse {
+	var provinces []model.ProvinceResponse
+	for _, entity := range entities {
+		t := model.ProvinceResponse{
+			ID:   entity.ID,
+			Name: entity.Name,
+		}
+		provinces = append(provinces, t)
+	}
+	return provinces
+}

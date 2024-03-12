@@ -6,7 +6,24 @@ type APIResponse[T any] struct {
 	Message string `json:"message"`
 }
 
+type Response[T any] struct {
+	Data T
+	Meta *MetaPagination
+}
+
+type QueryString[T any] struct {
+	Query           T
+	QueryPagination PaginationQuery
+}
+
 type PaginationQuery struct {
 	Page    int `json:"page"`
 	PerPage int `json:"per_page"`
+}
+
+type MetaPagination struct {
+	Page      int   `json:"page"`
+	PerPage   int   `json:"per_page"`
+	TotalPage int   `json:"total_page"`
+	TotalRows int64 `json:"total_rows"`
 }

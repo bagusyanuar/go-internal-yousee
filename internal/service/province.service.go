@@ -11,7 +11,7 @@ import (
 
 type (
 	ProvinceService interface {
-		FindAll(ctx context.Context, param string, paginateQuery model.PaginationQuery) ([]model.ProvinceResponse, error)
+		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.ProvinceResponse], error)
 	}
 
 	province struct {
@@ -21,17 +21,14 @@ type (
 )
 
 // FindAll implements ProvinceService.
-func (service *province) FindAll(ctx context.Context, param string, paginateQuery model.PaginationQuery) ([]model.ProvinceResponse, error) {
-	var results []model.ProvinceResponse
-	entities, err := service.ProvinceRepository.FindAll(ctx, param, paginateQuery)
+func (service *province) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.ProvinceResponse], error) {
+	var provinces []model.ProvinceResponse
+	response, err := service.ProvinceRepository.FindAll(ctx, queryString)
 	if err != nil {
-		return results, err
+		return model.Response[[]model.ProvinceResponse]{}, err
 	}
-	for _, entity := range entities {
-		t := *transformer.ProvinceToResponse(&entity)
-		results = append(results, t)
-	}
-	return results, nil
+	provinces = transformer.ToProvinces(response.Data)
+	return model.Response[[]model.ProvinceResponse]{Data: provinces, Meta: response.Meta}, nil
 }
 
 func NewProvinceService(provinceRepository repositories.ProvinceRepository, log *logrus.Logger) ProvinceService {
