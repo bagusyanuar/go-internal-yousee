@@ -11,6 +11,7 @@ type RouteConfig struct {
 	AuthController     *controller.AuthController
 	TypeController     *controller.TypeController
 	ProvinceController *controller.ProvinceController
+	CityController     *controller.CityController
 }
 
 func (c *RouteConfig) Setup() {
@@ -36,4 +37,8 @@ func (c *RouteConfig) AuthRoute() {
 
 	routeProvince := c.App.Group("/province")
 	routeProvince.Get("/", c.ProvinceController.FindAll)
+
+	routeCity := c.App.Group("/city")
+	routeCity.Get("/", c.CityController.FindAll)
+	routeCity.Get("/:id", c.CityController.FindByID)
 }
