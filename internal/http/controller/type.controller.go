@@ -6,6 +6,7 @@ import (
 	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/model"
 	"github.com/bagusyanuar/go-internal-yousee/internal/service"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -14,12 +15,14 @@ import (
 type TypeController struct {
 	TypeService service.TypeService
 	Log         *logrus.Logger
+	Validator   *validator.Validate
 }
 
-func NewTypeController(typeService service.TypeService, log *logrus.Logger) *TypeController {
+func NewTypeController(typeService service.TypeService, log *logrus.Logger, validator *validator.Validate) *TypeController {
 	return &TypeController{
 		TypeService: typeService,
 		Log:         log,
+		Validator:   validator,
 	}
 }
 
@@ -61,6 +64,13 @@ func (c *TypeController) Create(ctx *fiber.Ctx) error {
 		return common.JSONBadRequest(ctx, err.Error(), nil)
 	}
 
+	errValidation, msg := common.Validate(c.Validator, request)
+
+	if errValidation != nil {
+		c.Log.Warnf("validation value : %+v", msg)
+		return common.JSONBadRequest(ctx, "bad request", msg)
+	}
+
 	if form, err := ctx.MultipartForm(); err == nil {
 		files := form.File["icon"]
 		for _, file := range files {
@@ -70,6 +80,9 @@ func (c *TypeController) Create(ctx *fiber.Ctx) error {
 
 	err = c.TypeService.Create(ctx.UserContext(), request)
 	if err != nil {
+		if errors.Is(common.ErrBadRequest, err) {
+			return common.JSONBadRequest(ctx, err.Error(), nil)
+		}
 		return common.JSONError(ctx, err.Error(), nil)
 	}
 

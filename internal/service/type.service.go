@@ -79,10 +79,6 @@ func (service *itemType) FindByID(ctx context.Context, id string) (*model.TypeRe
 // Create implements TypeService.
 func (service *itemType) Create(ctx context.Context, request *model.TypeRequest) error {
 
-	if err := service.Validator.Struct(request); err != nil {
-		service.Log.Warnf("invalid request : %+v", err.Error())
-		return common.ErrBadRequest
-	}
 	name := request.Name
 
 	icon, err := service.upload(request.Icon)
