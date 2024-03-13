@@ -6,6 +6,7 @@ import (
 	"github.com/bagusyanuar/go-internal-yousee/internal/http/route"
 	"github.com/bagusyanuar/go-internal-yousee/internal/repositories"
 	"github.com/bagusyanuar/go-internal-yousee/internal/service"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -13,11 +14,12 @@ import (
 )
 
 type BootstrapConfig struct {
-	App    *fiber.App
-	DB     *gorm.DB
-	Log    *logrus.Logger
-	Config *viper.Viper
-	JWT    *common.JWT
+	App       *fiber.App
+	DB        *gorm.DB
+	Log       *logrus.Logger
+	Config    *viper.Viper
+	JWT       *common.JWT
+	Validator *validator.Validate
 }
 
 func Bootstrap(config *BootstrapConfig) {
@@ -28,7 +30,7 @@ func Bootstrap(config *BootstrapConfig) {
 	cityRepository := repositories.NewCityRepository(config.DB, config.Log)
 
 	authService := service.NewAuthService(authRepository, config.JWT)
-	typeService := service.NewItemTypeService(typeRepository, config.Log)
+	typeService := service.NewItemTypeService(typeRepository, config.Log, config.Validator)
 	provinceService := service.NewProvinceService(provinceRepository, config.Log)
 	cityService := service.NewCityService(cityRepository, config.Log)
 

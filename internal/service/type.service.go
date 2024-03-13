@@ -11,6 +11,7 @@ import (
 	"github.com/bagusyanuar/go-internal-yousee/internal/model"
 	"github.com/bagusyanuar/go-internal-yousee/internal/model/transformer"
 	"github.com/bagusyanuar/go-internal-yousee/internal/repositories"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -31,6 +32,7 @@ type (
 	itemType struct {
 		TypeRepository repositories.TypeRepository
 		Log            *logrus.Logger
+		Validator      *validator.Validate
 	}
 )
 
@@ -76,6 +78,11 @@ func (service *itemType) FindByID(ctx context.Context, id string) (*model.TypeRe
 
 // Create implements TypeService.
 func (service *itemType) Create(ctx context.Context, request *model.TypeRequest) error {
+
+	if err := service.Validator.Struct(request); err != nil {
+		service.Log.Warnf("invalid request : %+v", err.Error())
+		return common.ErrBadRequest
+	}
 	name := request.Name
 
 	icon, err := service.upload(request.Icon)
@@ -132,9 +139,10 @@ func (service *itemType) upload(icon *multipart.FileHeader) (*string, error) {
 	return iconName, nil
 }
 
-func NewItemTypeService(typeRepository repositories.TypeRepository, log *logrus.Logger) TypeService {
+func NewItemTypeService(typeRepository repositories.TypeRepository, log *logrus.Logger, validator *validator.Validate) TypeService {
 	return &itemType{
 		TypeRepository: typeRepository,
 		Log:            log,
+		Validator:      validator,
 	}
 }

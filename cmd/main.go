@@ -12,13 +12,15 @@ func main() {
 	app := config.NewFiber()
 	db := config.NewDatabase(viperConfig, log)
 	jwt := config.NewJWT(viperConfig)
+	validator := config.NewValidator()
 
 	config.Bootstrap(&config.BootstrapConfig{
-		App:    app,
-		Config: viperConfig,
-		Log:    log,
-		DB:     db,
-		JWT:    jwt,
+		App:       app,
+		Config:    viperConfig,
+		Log:       log,
+		DB:        db,
+		JWT:       jwt,
+		Validator: validator,
 	})
 
 	port := viperConfig.GetString("APP_PORT")
