@@ -28,17 +28,20 @@ func Bootstrap(config *BootstrapConfig) {
 	typeRepository := repositories.NewTypeRepository(config.DB, config.Log)
 	provinceRepository := repositories.NewProvinceRepository(config.DB, config.Log)
 	cityRepository := repositories.NewCityRepository(config.DB, config.Log)
+	vendorRepository := repositories.NewVendorRepository(config.DB, config.Log)
 
 	authService := service.NewAuthService(authRepository, config.JWT)
 	typeService := service.NewItemTypeService(typeRepository, config.Log, config.Validator)
 	provinceService := service.NewProvinceService(provinceRepository, config.Log)
 	cityService := service.NewCityService(cityRepository, config.Log)
+	vendorService := service.NewVendorService(vendorRepository, config.Log, config.Validator)
 
 	homeController := controller.NewHomeController(config.Config)
 	authController := controller.NewAuthController(config.Config, authService, config.Log)
 	typeController := controller.NewTypeController(typeService, config.Log, config.Validator)
 	provinceController := controller.NewProvinceController(provinceService, config.Log)
 	cityController := controller.NewCityController(cityService, config.Log)
+	vendorController := controller.NewVendorController(vendorService, config.Log)
 
 	routeConfig := route.RouteConfig{
 		App:                config.App,
@@ -47,6 +50,7 @@ func Bootstrap(config *BootstrapConfig) {
 		TypeController:     typeController,
 		ProvinceController: provinceController,
 		CityController:     cityController,
+		VendorController:   vendorController,
 	}
 	routeConfig.Setup()
 }
