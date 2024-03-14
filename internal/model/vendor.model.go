@@ -13,3 +13,13 @@ type VendorResponse struct {
 	PICPhone string    `json:"pic_phone"`
 	LastSeen time.Time `json:"last_seen"`
 }
+
+type VendorRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Name     string `json:"name" validate:"required"`
+	Address  string `json:"address" validate:"required"`
+	Phone    string `json:"phone" validate:"required"`
+	Brand    string `json:"brand" validate:"required"`
+	PICName  string `json:"pic_name"`
+	PICPhone string `json:"pic_phone" validate:"required"`
+}

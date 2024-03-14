@@ -45,4 +45,6 @@ func (c *RouteConfig) AuthRoute() {
 
 	vendorGroup := c.App.Group("/vendor")
 	vendorGroup.Get("/", c.VendorController.FindAll)
+	vendorGroup.Post("/", c.VendorController.Create)
+	vendorGroup.Put("/:id", c.VendorController.Patch)
 }
