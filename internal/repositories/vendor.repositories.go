@@ -17,7 +17,7 @@ type (
 		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Vendor], error)
 		FindByID(ctx context.Context, id string) (*entity.Vendor, error)
 		Create(ctx context.Context, entity *entity.Vendor) error
-		Patch(ctx context.Context, id string, data *entity.Vendor) error
+		Patch(ctx context.Context, id string, data map[string]interface{}) error
 		Delete(ctx context.Context, id string) error
 	}
 
@@ -71,7 +71,7 @@ func (repository *vendor) Create(ctx context.Context, entity *entity.Vendor) err
 }
 
 // Patch implements VendorRepository.
-func (repository *vendor) Patch(ctx context.Context, id string, data *entity.Vendor) error {
+func (repository *vendor) Patch(ctx context.Context, id string, data map[string]interface{}) error {
 	tx := repository.DB.WithContext(ctx)
 
 	v := new(entity.Vendor)
@@ -79,18 +79,10 @@ func (repository *vendor) Patch(ctx context.Context, id string, data *entity.Ven
 		return err
 	}
 
-	dataMap := map[string]interface{}{
-		"name":     data.Name,
-		"phone":    data.Phone,
-		"brand":    data.Brand,
-		"email":    data.Email,
-		"picName":  data.PICName,
-		"picPhone": data.PICPhone,
-	}
 	if err := tx.Model(&v).
 		Omit(clause.Associations).
 		Where("id = ?", id).
-		Updates(&dataMap).Error; err != nil {
+		Updates(&data).Error; err != nil {
 		return err
 	}
 	return nil
@@ -98,9 +90,17 @@ func (repository *vendor) Patch(ctx context.Context, id string, data *entity.Ven
 
 // Delete implements VendorRepository.
 func (repository *vendor) Delete(ctx context.Context, id string) error {
-	entity := new(entity.Type)
 	tx := repository.DB.WithContext(ctx)
-	if err := tx.Omit(clause.Associations).Where("id = ?", id).Unscoped().Delete(&entity).Error; err != nil {
+
+	v := new(entity.Vendor)
+	if err := tx.Where("id = ?", id).First(&v).Error; err != nil {
+		return err
+	}
+
+	if err := tx.Omit(clause.Associations).
+		Where("id = ?", id).
+		Unscoped().
+		Delete(&v).Error; err != nil {
 		return err
 	}
 	return nil

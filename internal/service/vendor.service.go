@@ -80,17 +80,15 @@ func (service *vendor) Patch(ctx context.Context, id string, request *model.Vend
 	brand := request.Brand
 	picName := request.PICName
 	picPhone := request.PICPhone
-	lastSeen := time.Now()
 
-	data := &entity.Vendor{
-		Name:     name,
-		Email:    email,
-		Address:  address,
-		Phone:    phone,
-		Brand:    brand,
-		PICName:  picName,
-		PICPhone: picPhone,
-		LastSeen: lastSeen,
+	data := map[string]interface{}{
+		"name":     name,
+		"phone":    phone,
+		"brand":    brand,
+		"email":    email,
+		"picName":  picName,
+		"picPhone": picPhone,
+		"address":  address,
 	}
 
 	err := service.VendorRepository.Patch(ctx, id, data)

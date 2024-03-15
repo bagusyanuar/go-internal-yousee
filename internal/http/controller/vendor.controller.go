@@ -115,3 +115,18 @@ func (c *VendorController) Patch(ctx *fiber.Ctx) error {
 		Message: "successfully patch vendor",
 	})
 }
+
+func (c *VendorController) Delete(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+	err := c.VendorService.Delete(ctx.UserContext(), id)
+	if err != nil {
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			return common.JSONNotFound(ctx, err.Error(), nil)
+		}
+		return common.JSONError(ctx, err.Error(), nil)
+	}
+
+	return common.JSONSuccess(ctx, common.ResponseMap{
+		Message: "successfully delete media type",
+	})
+}
