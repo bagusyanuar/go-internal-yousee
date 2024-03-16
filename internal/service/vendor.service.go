@@ -55,7 +55,7 @@ func (service *vendor) Create(ctx context.Context, request *model.VendorRequest)
 		Brand:    brand,
 		PICName:  picName,
 		PICPhone: picPhone,
-		LastSeen: lastSeen,
+		LastSeen: &lastSeen,
 	}
 
 	err := service.VendorRepository.Create(ctx, data)

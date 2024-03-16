@@ -4,9 +4,9 @@ import "time"
 
 type Item struct {
 	ID        uint64    `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	TypeID    uint64    `gorm:"column:type_id" json:"type_id"`
-	CityID    uint64    `gorm:"column:city_id" json:"city_id"`
-	VendorID  uint64    `gorm:"column:vendor_id" json:"vendor_id"`
+	TypeID    *uint64   `gorm:"column:type_id" json:"type_id"`
+	CityID    *uint64   `gorm:"column:city_id" json:"city_id"`
+	VendorID  *uint64   `gorm:"column:vendor_id" json:"vendor_id"`
 	Name      string    `gorm:"column:name" json:"name"`
 	Address   string    `gorm:"column:address" json:"address"`
 	Latitude  float64   `gorm:"column:latitude" json:"latitude"`

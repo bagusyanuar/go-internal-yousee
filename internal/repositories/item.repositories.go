@@ -14,7 +14,7 @@ import (
 type (
 	ItemRepository interface {
 		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Item], error)
-		// FindByID(ctx context.Context, id string) (*entity.Vendor, error)
+		FindByID(ctx context.Context, id string) (*entity.Item, error)
 		// Create(ctx context.Context, entity *entity.Vendor) error
 		// Patch(ctx context.Context, id string, data map[string]interface{}) error
 		// Delete(ctx context.Context, id string) error
@@ -41,12 +41,32 @@ func (repository *itemStruct) FindAll(ctx context.Context, queryString model.Que
 		Limit: queryString.QueryPagination.PerPage,
 		Page:  queryString.QueryPagination.Page,
 	}
-	if err := tx.Scopes(common.Paginate(items, paginate, tx)).Find(&items).Error; err != nil {
+	if err := tx.
+		Preload("Type").
+		Preload("City").
+		Preload("Vendor").
+		Scopes(common.Paginate(items, paginate, tx)).
+		Find(&items).Error; err != nil {
 		return model.Response[[]entity.Item]{}, err
 	}
 
 	metaPagination = transformer.ToMetaPagination(paginate)
 	return model.Response[[]entity.Item]{Data: items, Meta: metaPagination}, nil
+}
+
+// FindByID implements ItemRepository.
+func (repository *itemStruct) FindByID(ctx context.Context, id string) (*entity.Item, error) {
+	var entity *entity.Item
+	tx := repository.DB.WithContext(ctx)
+	if err := tx.
+		Preload("Type").
+		Preload("City").
+		Preload("Vendor").
+		Where("id = ?", id).
+		First(&entity).Error; err != nil {
+		return entity, err
+	}
+	return entity, nil
 }
 
 func NewItemRepository(db *gorm.DB, log *logrus.Logger) ItemRepository {

@@ -2,6 +2,7 @@ package route
 
 import (
 	"github.com/bagusyanuar/go-internal-yousee/internal/http/controller"
+	"github.com/bagusyanuar/go-internal-yousee/internal/http/middleware"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -13,41 +14,48 @@ type RouteConfig struct {
 	ProvinceController *controller.ProvinceController
 	CityController     *controller.CityController
 	VendorController   *controller.VendorController
+	ItemController     *controller.ItemController
 }
 
 func (c *RouteConfig) Setup() {
-	c.GuestRoute()
-	c.AuthRoute()
+
+	apiRoute := c.App.Group("/api")
+	c.GuestRoute(apiRoute)
+	c.AuthRoute(apiRoute)
 }
 
-func (c *RouteConfig) GuestRoute() {
-	c.App.Get("/", c.HomeController.Index)
-	c.App.Post("/sign-in", c.AuthController.SignIn)
+func (c *RouteConfig) GuestRoute(apiRoute fiber.Router) {
+	apiRoute.Get("/", c.HomeController.Index)
+	apiRoute.Post("/sign-in", c.AuthController.SignIn)
 
 }
 
-func (c *RouteConfig) AuthRoute() {
+func (c *RouteConfig) AuthRoute(apiRoute fiber.Router) {
 
 	//media type routes
-	routeType := c.App.Group("/type")
-	routeType.Get("/", c.TypeController.FindAll)
-	routeType.Post("/", c.TypeController.Create)
-	routeType.Get("/:id", c.TypeController.FindByID)
-	routeType.Put("/:id", c.TypeController.Patch)
-	routeType.Delete("/:id/delete", c.TypeController.Delete)
+	apiRoute.Use(middleware.AuthMiddleware)
+	typeGroup := apiRoute.Group("/type")
+	typeGroup.Get("/", c.TypeController.FindAll)
+	typeGroup.Post("/", c.TypeController.Create)
+	typeGroup.Get("/:id", c.TypeController.FindByID)
+	typeGroup.Put("/:id", c.TypeController.Patch)
+	typeGroup.Delete("/:id/delete", c.TypeController.Delete)
 
-	routeProvince := c.App.Group("/province")
-	routeProvince.Get("/", c.ProvinceController.FindAll)
+	provinceGroup := apiRoute.Group("/province")
+	provinceGroup.Get("/", c.ProvinceController.FindAll)
 
-	routeCity := c.App.Group("/city")
-	routeCity.Get("/", c.CityController.FindAll)
-	routeCity.Get("/:id", c.CityController.FindByID)
+	cityGroup := apiRoute.Group("/city")
+	cityGroup.Get("/", c.CityController.FindAll)
+	cityGroup.Get("/:id", c.CityController.FindByID)
 
-	vendorGroup := c.App.Group("/vendor")
+	vendorGroup := apiRoute.Group("/vendor")
 	vendorGroup.Get("/", c.VendorController.FindAll)
 	vendorGroup.Post("/", c.VendorController.Create)
 	vendorGroup.Get("/:id", c.VendorController.FindByID)
 	vendorGroup.Put("/:id", c.VendorController.Patch)
 	vendorGroup.Delete("/:id", c.VendorController.Delete)
 
+	itemGrop := apiRoute.Group("/item")
+	itemGrop.Get("/", c.ItemController.FindAll)
+	itemGrop.Get("/:id", c.ItemController.FindByID)
 }

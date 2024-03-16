@@ -13,6 +13,7 @@ import (
 type (
 	ItemService interface {
 		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.ItemResponse], error)
+		FindByID(ctx context.Context, id string) (*model.ItemResponse, error)
 	}
 
 	itemStruct struct {
@@ -31,6 +32,15 @@ func (service *itemStruct) FindAll(ctx context.Context, queryString model.QueryS
 	}
 	items = transformer.ToItems(response.Data)
 	return model.Response[[]model.ItemResponse]{Data: items, Meta: response.Meta}, nil
+}
+
+// FindByID implements ItemService.
+func (service *itemStruct) FindByID(ctx context.Context, id string) (*model.ItemResponse, error) {
+	entity, err := service.ItemRepository.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return transformer.ToItem(entity), nil
 }
 
 func NewItemService(

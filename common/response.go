@@ -49,6 +49,15 @@ func JSONBadRequest(ctx *fiber.Ctx, message string, data any) error {
 	})
 }
 
+func JSONUnauthorized(ctx *fiber.Ctx, message string, data any) error {
+	status := 401
+	return ctx.Status(status).JSON(APIResponse[any]{
+		Data:    data,
+		Message: message,
+		Code:    status,
+	})
+}
+
 func JSONNotFound(ctx *fiber.Ctx, message string, data any) error {
 	status := 404
 	return ctx.Status(status).JSON(APIResponse[any]{
