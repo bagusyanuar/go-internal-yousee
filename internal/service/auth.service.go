@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/entity"
@@ -46,12 +47,15 @@ func (service *auth) SignIn(ctx context.Context, request *model.AuthRequest) (*m
 
 func (service *auth) createToken(cfg *common.JWT, user *entity.User) (string, error) {
 	JWTSignInMethod := jwt.SigningMethodHS256
+	exp := time.Now().Add(time.Minute * time.Duration(cfg.Exp))
 	claims := common.JWTClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer: cfg.Issuer,
+			Issuer:    cfg.Issuer,
+			ExpiresAt: jwt.NewNumericDate(exp),
 		},
 		UserID: user.ID,
 	}
+
 	token := jwt.NewWithClaims(JWTSignInMethod, claims)
 	return token.SignedString([]byte(cfg.SignatureKey))
 }

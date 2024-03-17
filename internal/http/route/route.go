@@ -20,43 +20,43 @@ type RouteConfig struct {
 
 func (c *RouteConfig) Setup() {
 
+	// apiRoute := c.App.Group("/api")
 	apiRoute := c.App.Group("/api")
-	c.GuestRoute(apiRoute)
-	apiRoute.Use(c.JWTMiddleware.Verify())
+	c.PublicRoute(apiRoute)
 	c.ProtectedRoute(apiRoute)
 }
 
-func (c *RouteConfig) GuestRoute(apiRoute fiber.Router) {
-	apiRoute.Get("/", c.HomeController.Index)
-	apiRoute.Post("/sign-in", c.AuthController.SignIn)
+func (c *RouteConfig) PublicRoute(route fiber.Router) {
+	route.Get("/", c.HomeController.Index)
+	route.Post("/sign-in", c.AuthController.SignIn)
 
 }
 
-func (c *RouteConfig) ProtectedRoute(apiRoute fiber.Router) {
+func (c *RouteConfig) ProtectedRoute(route fiber.Router) {
 
 	//media type routes
-	typeGroup := apiRoute.Group("/type")
+	typeGroup := route.Group("/type", c.JWTMiddleware.Verify())
 	typeGroup.Get("/", c.TypeController.FindAll)
 	typeGroup.Post("/", c.TypeController.Create)
 	typeGroup.Get("/:id", c.TypeController.FindByID)
 	typeGroup.Put("/:id", c.TypeController.Patch)
 	typeGroup.Delete("/:id/delete", c.TypeController.Delete)
 
-	provinceGroup := apiRoute.Group("/province")
+	provinceGroup := route.Group("/province", c.JWTMiddleware.Verify())
 	provinceGroup.Get("/", c.ProvinceController.FindAll)
 
-	cityGroup := apiRoute.Group("/city")
+	cityGroup := route.Group("/city", c.JWTMiddleware.Verify())
 	cityGroup.Get("/", c.CityController.FindAll)
 	cityGroup.Get("/:id", c.CityController.FindByID)
 
-	vendorGroup := apiRoute.Group("/vendor")
+	vendorGroup := route.Group("/vendor", c.JWTMiddleware.Verify())
 	vendorGroup.Get("/", c.VendorController.FindAll)
 	vendorGroup.Post("/", c.VendorController.Create)
 	vendorGroup.Get("/:id", c.VendorController.FindByID)
 	vendorGroup.Put("/:id", c.VendorController.Patch)
 	vendorGroup.Delete("/:id", c.VendorController.Delete)
 
-	itemGrop := apiRoute.Group("/item")
+	itemGrop := route.Group("/item", c.JWTMiddleware.Verify())
 	itemGrop.Get("/", c.ItemController.FindAll)
 	itemGrop.Get("/", c.ItemController.Create)
 	itemGrop.Get("/:id", c.ItemController.FindByID)

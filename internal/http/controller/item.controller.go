@@ -25,6 +25,13 @@ func NewItemController(itemService service.ItemService, log *logrus.Logger) *Ite
 	}
 }
 
+func (c *ItemController) Test(ctx *fiber.Ctx) error {
+	user := ctx.Locals("user")
+	return common.JSONSuccess(ctx, common.ResponseMap{
+		Data: user,
+	})
+}
+
 func (c *ItemController) FindAll(ctx *fiber.Ctx) error {
 	param := ctx.Query("name")
 	page := ctx.QueryInt("page")
