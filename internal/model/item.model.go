@@ -44,3 +44,18 @@ type ItemVendor struct {
 	PICPhone string     `json:"pic_phone"`
 	LastSeen *time.Time `json:"last_seen"`
 }
+
+type ItemRequest struct {
+	TypeID    *uint64 `json:"type_id,omitempty" validate:"required"`
+	CityID    *uint64 `json:"city_id,omitempty" validate:"required"`
+	VendorID  *uint64 `json:"vendor_id,omitempty" validate:"required"`
+	Name      string  `json:"name" validate:"required"`
+	Address   string  `json:"address" validate:"required"`
+	Latitude  float64 `json:"latitude" validate:"required"`
+	Longitude float64 `json:"longitude" validate:"required"`
+	Location  string  `json:"location" validate:"required"`
+	URL       string  `json:"url" validate:"required"`
+	Width     float64 `json:"width" validate:"required"`
+	Height    float64 `json:"height" validate:"required"`
+	Position  string  `json:"position" validate:"required"`
+}

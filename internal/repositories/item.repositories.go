@@ -9,13 +9,14 @@ import (
 	"github.com/bagusyanuar/go-internal-yousee/internal/model/transformer"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type (
 	ItemRepository interface {
 		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Item], error)
 		FindByID(ctx context.Context, id string) (*entity.Item, error)
-		// Create(ctx context.Context, entity *entity.Vendor) error
+		Create(ctx context.Context, entity *entity.Item) error
 		// Patch(ctx context.Context, id string, data map[string]interface{}) error
 		// Delete(ctx context.Context, id string) error
 	}
@@ -67,6 +68,15 @@ func (repository *itemStruct) FindByID(ctx context.Context, id string) (*entity.
 		return entity, err
 	}
 	return entity, nil
+}
+
+// Create implements ItemRepository.
+func (repository *itemStruct) Create(ctx context.Context, entity *entity.Item) error {
+	tx := repository.DB.WithContext(ctx)
+	if err := tx.Omit(clause.Associations).Create(entity).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewItemRepository(db *gorm.DB, log *logrus.Logger) ItemRepository {

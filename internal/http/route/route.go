@@ -8,6 +8,7 @@ import (
 
 type RouteConfig struct {
 	App                *fiber.App
+	JWTMiddleware      *middleware.JWTMiddleware
 	HomeController     *controller.HomeController
 	AuthController     *controller.AuthController
 	TypeController     *controller.TypeController
@@ -21,7 +22,8 @@ func (c *RouteConfig) Setup() {
 
 	apiRoute := c.App.Group("/api")
 	c.GuestRoute(apiRoute)
-	c.AuthRoute(apiRoute)
+	apiRoute.Use(c.JWTMiddleware.Verify())
+	c.ProtectedRoute(apiRoute)
 }
 
 func (c *RouteConfig) GuestRoute(apiRoute fiber.Router) {
@@ -30,10 +32,9 @@ func (c *RouteConfig) GuestRoute(apiRoute fiber.Router) {
 
 }
 
-func (c *RouteConfig) AuthRoute(apiRoute fiber.Router) {
+func (c *RouteConfig) ProtectedRoute(apiRoute fiber.Router) {
 
 	//media type routes
-	apiRoute.Use(middleware.AuthMiddleware)
 	typeGroup := apiRoute.Group("/type")
 	typeGroup.Get("/", c.TypeController.FindAll)
 	typeGroup.Post("/", c.TypeController.Create)
@@ -57,5 +58,6 @@ func (c *RouteConfig) AuthRoute(apiRoute fiber.Router) {
 
 	itemGrop := apiRoute.Group("/item")
 	itemGrop.Get("/", c.ItemController.FindAll)
+	itemGrop.Get("/", c.ItemController.Create)
 	itemGrop.Get("/:id", c.ItemController.FindByID)
 }

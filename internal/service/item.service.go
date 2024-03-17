@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 
+	"github.com/bagusyanuar/go-internal-yousee/common"
+	"github.com/bagusyanuar/go-internal-yousee/internal/entity"
 	"github.com/bagusyanuar/go-internal-yousee/internal/model"
 	"github.com/bagusyanuar/go-internal-yousee/internal/model/transformer"
 	"github.com/bagusyanuar/go-internal-yousee/internal/repositories"
@@ -14,6 +16,7 @@ type (
 	ItemService interface {
 		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.ItemResponse], error)
 		FindByID(ctx context.Context, id string) (*model.ItemResponse, error)
+		Create(ctx context.Context, request *model.ItemRequest) (any, error)
 	}
 
 	itemStruct struct {
@@ -41,6 +44,46 @@ func (service *itemStruct) FindByID(ctx context.Context, id string) (*model.Item
 		return nil, err
 	}
 	return transformer.ToItem(entity), nil
+}
+
+// Create implements ItemService.
+func (service *itemStruct) Create(ctx context.Context, request *model.ItemRequest) (any, error) {
+	//validate form request
+	errValidation, msg := common.Validate(service.Validator, request)
+	if errValidation != nil {
+		return msg, common.ErrBadRequest
+	}
+
+	typeID := request.TypeID
+	cityID := request.CityID
+	vendorID := request.VendorID
+	name := request.Name
+	address := request.Address
+	latitude := request.Latitude
+	longitude := request.Longitude
+	url := request.URL
+	width := request.Width
+	height := request.Height
+	position := request.Position
+
+	entity := &entity.Item{
+		TypeID:    typeID,
+		CityID:    cityID,
+		VendorID:  vendorID,
+		Name:      name,
+		Address:   address,
+		Latitude:  latitude,
+		Longitude: longitude,
+		URL:       &url,
+		Width:     width,
+		Height:    height,
+		Position:  position,
+	}
+	err := service.ItemRepository.Create(ctx, entity)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
 }
 
 func NewItemService(

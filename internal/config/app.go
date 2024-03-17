@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/http/controller"
+	"github.com/bagusyanuar/go-internal-yousee/internal/http/middleware"
 	"github.com/bagusyanuar/go-internal-yousee/internal/http/route"
 	"github.com/bagusyanuar/go-internal-yousee/internal/repositories"
 	"github.com/bagusyanuar/go-internal-yousee/internal/service"
@@ -23,6 +24,7 @@ type BootstrapConfig struct {
 }
 
 func Bootstrap(config *BootstrapConfig) {
+	jwtMiddleware := middleware.NewJWTMiddleware(config.JWT)
 
 	authRepository := repositories.NewAuthRepository(config.DB, config.Log)
 	typeRepository := repositories.NewTypeRepository(config.DB, config.Log)
@@ -48,6 +50,7 @@ func Bootstrap(config *BootstrapConfig) {
 
 	routeConfig := route.RouteConfig{
 		App:                config.App,
+		JWTMiddleware:      &jwtMiddleware,
 		HomeController:     homeController,
 		AuthController:     authController,
 		TypeController:     typeController,

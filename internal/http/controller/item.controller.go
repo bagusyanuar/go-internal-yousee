@@ -66,3 +66,25 @@ func (c *ItemController) FindByID(ctx *fiber.Ctx) error {
 		Data:    res,
 	})
 }
+
+func (c *ItemController) Create(ctx *fiber.Ctx) error {
+	request := new(model.ItemRequest)
+	err := ctx.BodyParser(request)
+
+	if err != nil {
+		c.Log.Warnf("failed to parse request body : %+v", err)
+		return common.JSONBadRequest(ctx, err.Error(), nil)
+	}
+
+	validationMsg, err := c.ItemService.Create(ctx.UserContext(), request)
+	if err != nil {
+		if errors.Is(common.ErrBadRequest, err) {
+			return common.JSONBadRequest(ctx, "bad request", validationMsg)
+		}
+		return common.JSONError(ctx, err.Error(), nil)
+	}
+
+	return common.JSONSuccess(ctx, common.ResponseMap{
+		Message: "successfully create new item",
+	})
+}
