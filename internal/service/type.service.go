@@ -22,9 +22,9 @@ const (
 
 type (
 	TypeService interface {
-		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.TypeResponse], error)
-		FindByID(ctx context.Context, id string) (*model.TypeResponse, error)
-		Create(ctx context.Context, request *model.TypeRequest) error
+		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.TypeResponse], int, error)
+		FindByID(ctx context.Context, id string) (*model.TypeResponse, int, error)
+		Create(ctx context.Context, request *model.TypeRequest) (code int, validationMessage any, e error)
 		Patch(ctx context.Context, id string, request *model.TypeRequest) error
 		Delete(ctx context.Context, id string) error
 	}
@@ -37,23 +37,51 @@ type (
 )
 
 // FindAll implements TypeService.
-func (service *typeStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.TypeResponse], error) {
+func (service *typeStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.TypeResponse], int, error) {
 	var types []model.TypeResponse
-	response, err := service.TypeRepository.FindAll(ctx, queryString)
+	response, code, err := service.TypeRepository.FindAll(ctx, queryString)
 	if err != nil {
-		return model.Response[[]model.TypeResponse]{Code: 422}, err
+		return model.Response[[]model.TypeResponse]{}, code, err
 	}
 	types = transformer.ToTypes(response.Data)
-	return model.Response[[]model.TypeResponse]{Data: types, Meta: response.Meta, Code: 200}, nil
+	return model.Response[[]model.TypeResponse]{
+		Data: types,
+		Meta: response.Meta,
+	}, code, nil
 }
 
 // FindByID implements TypeService.
-func (service *typeStruct) FindByID(ctx context.Context, id string) (*model.TypeResponse, error) {
-	entity, err := service.TypeRepository.FindByID(ctx, id)
+func (service *typeStruct) FindByID(ctx context.Context, id string) (*model.TypeResponse, int, error) {
+	response, code, err := service.TypeRepository.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, code, err
 	}
-	return transformer.ToType(entity), nil
+	return transformer.ToType(response), code, nil
+}
+
+// Create implements TypeService.
+func (service *typeStruct) Create(ctx context.Context, request *model.TypeRequest) (int, any, error) {
+	errValidation, msg := common.Validate(service.Validator, request)
+	if errValidation != nil {
+		return common.StatusBadRequest, msg, common.ErrBadRequest
+	}
+	//upload icon
+	icon, err := service.upload(request.Icon)
+	if err != nil {
+		return common.StatusInternalServerError, nil, err
+	}
+
+	name := request.Name
+	entity := &entity.Type{
+		Name: name,
+		Icon: icon,
+	}
+
+	code, err := service.TypeRepository.Create(ctx, entity)
+	if err != nil {
+		return code, nil, err
+	}
+	return common.StatusOK, nil, nil
 }
 
 // Delete implements TypeService.
@@ -81,29 +109,6 @@ func (service *typeStruct) Patch(ctx context.Context, id string, request *model.
 	}
 
 	err := service.TypeRepository.Patch(ctx, id, entity)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Create implements TypeService.
-func (service *typeStruct) Create(ctx context.Context, request *model.TypeRequest) error {
-
-	name := request.Name
-
-	icon, err := service.upload(request.Icon)
-
-	if err != nil {
-		return err
-	}
-
-	entity := &entity.Type{
-		Name: name,
-		Icon: icon,
-	}
-
-	err = service.TypeRepository.Create(ctx, entity)
 	if err != nil {
 		return err
 	}

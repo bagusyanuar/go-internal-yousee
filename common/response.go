@@ -4,6 +4,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+const (
+	StatusOK                   int = 200
+	StatusBadRequest           int = 400
+	StatusUnauthorized         int = 401
+	StatusForbidden            int = 403
+	StatusNotFound             int = 404
+	StatusUnProccessableEntity int = 422
+	StatusInternalServerError  int = 500
+)
+
 type APIResponse[T any] struct {
 	Code    int    `json:"code"`
 	Data    T      `json:"data"`

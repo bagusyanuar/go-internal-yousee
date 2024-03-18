@@ -15,9 +15,9 @@ import (
 
 type (
 	TypeRepository interface {
-		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Type], error)
-		FindByID(ctx context.Context, id string) (*entity.Type, error)
-		Create(ctx context.Context, entity *entity.Type) error
+		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Type], int, error)
+		FindByID(ctx context.Context, id string) (*entity.Type, int, error)
+		Create(ctx context.Context, entity *entity.Type) (int, error)
 		Patch(ctx context.Context, id string, entity *entity.Type) error
 		Delete(ctx context.Context, id string) error
 	}
@@ -29,8 +29,9 @@ type (
 )
 
 // FindAll implements TypeRepository.
-func (repository *typeStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Type], error) {
-	var types []entity.Type
+func (repository *typeStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Type], int, error) {
+	var data []entity.Type
+	code := common.StatusUnProccessableEntity
 	metaPagination := new(model.MetaPagination)
 
 	tx := repository.DB.WithContext(ctx)
@@ -46,28 +47,51 @@ func (repository *typeStruct) FindAll(ctx context.Context, queryString model.Que
 	}
 
 	if err := tx.
-		Scopes(common.Paginate(types, paginate, tx)).
-		Find(&types).Error; err != nil {
-		return model.Response[[]entity.Type]{}, err
+		Scopes(common.Paginate(data, paginate, tx)).
+		Preload("Abc").
+		Find(&data).Error; err != nil {
+		repository.Log.Warnf("query failed : %+v", err)
+		return model.Response[[]entity.Type]{}, code, err
 	}
+	code = common.StatusOK
 	metaPagination = transformer.ToMetaPagination(paginate)
-	return model.Response[[]entity.Type]{Data: types, Meta: metaPagination}, nil
+	return model.Response[[]entity.Type]{
+		Data: data,
+		Meta: metaPagination,
+	}, code, nil
 }
 
 // FindByID implements TypeRepository.
-func (repository *typeStruct) FindByID(ctx context.Context, id string) (*entity.Type, error) {
-	var entity *entity.Type
+func (repository *typeStruct) FindByID(ctx context.Context, id string) (*entity.Type, int, error) {
+	var data *entity.Type
+	code := common.StatusUnProccessableEntity
 	tx := repository.DB.WithContext(ctx)
 	if err := tx.
 		Omit(clause.Associations).
+		Preload("ASD").
 		Where("id = ?", id).
-		First(&entity).Error; err != nil {
+		First(&data).Error; err != nil {
 		if errors.Is(gorm.ErrRecordNotFound, err) {
-			return nil, common.ErrRecordNotFound
+			repository.Log.Warnf("query failed : %+v", err)
+			code = common.StatusNotFound
+			return nil, code, common.ErrRecordNotFound
 		}
-		return nil, err
+		return nil, code, err
 	}
-	return entity, nil
+	code = common.StatusOK
+	return data, code, nil
+}
+
+// Create implements TypeRepository.
+func (repository *typeStruct) Create(ctx context.Context, entity *entity.Type) (int, error) {
+	code := common.StatusUnProccessableEntity
+	tx := repository.DB.WithContext(ctx)
+	if err := tx.Create(entity).Error; err != nil {
+		repository.Log.Warnf("query failed : %+v", err)
+		return code, err
+	}
+	code = common.StatusOK
+	return code, nil
 }
 
 // Delete implements TypeRepository.
@@ -84,15 +108,6 @@ func (repository *typeStruct) Delete(ctx context.Context, id string) error {
 func (repository *typeStruct) Patch(ctx context.Context, id string, entity *entity.Type) error {
 	tx := repository.DB.WithContext(ctx)
 	if err := tx.Omit(clause.Associations).Where("id = ?", id).Updates(&entity).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
-// Create implements TypeRepository.
-func (repository *typeStruct) Create(ctx context.Context, entity *entity.Type) error {
-	tx := repository.DB.WithContext(ctx)
-	if err := tx.Create(entity).Error; err != nil {
 		return err
 	}
 	return nil

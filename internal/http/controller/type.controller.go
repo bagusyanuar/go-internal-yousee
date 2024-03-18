@@ -1,12 +1,9 @@
 package controller
 
 import (
-	"errors"
-
 	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/model"
 	"github.com/bagusyanuar/go-internal-yousee/internal/service"
-	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 )
@@ -14,14 +11,12 @@ import (
 type TypeController struct {
 	TypeService service.TypeService
 	Log         *logrus.Logger
-	Validator   *validator.Validate
 }
 
-func NewTypeController(typeService service.TypeService, log *logrus.Logger, validator *validator.Validate) *TypeController {
+func NewTypeController(typeService service.TypeService, log *logrus.Logger) *TypeController {
 	return &TypeController{
 		TypeService: typeService,
 		Log:         log,
-		Validator:   validator,
 	}
 }
 
@@ -37,9 +32,9 @@ func (c *TypeController) FindAll(ctx *fiber.Ctx) error {
 			PerPage: perPage,
 		},
 	}
-	response, err := c.TypeService.FindAll(ctx.UserContext(), queryString)
+	response, code, err := c.TypeService.FindAll(ctx.UserContext(), queryString)
 	if err != nil {
-		return common.JSONError(ctx, err.Error(), nil)
+		return common.JSONFromError(ctx, code, err, nil)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{
@@ -52,16 +47,13 @@ func (c *TypeController) FindAll(ctx *fiber.Ctx) error {
 func (c *TypeController) FindByID(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 
-	res, err := c.TypeService.FindByID(ctx.UserContext(), id)
+	response, code, err := c.TypeService.FindByID(ctx.UserContext(), id)
 	if err != nil {
-		if errors.Is(common.ErrRecordNotFound, err) {
-			return common.JSONNotFound(ctx, err.Error(), nil)
-		}
-		return common.JSONError(ctx, err.Error(), nil)
+		return common.JSONFromError(ctx, code, err, nil)
 	}
 	return common.JSONSuccess(ctx, common.ResponseMap{
 		Message: "successfully show type",
-		Data:    res,
+		Data:    response,
 	})
 }
 
@@ -74,13 +66,6 @@ func (c *TypeController) Create(ctx *fiber.Ctx) error {
 		return common.JSONBadRequest(ctx, err.Error(), nil)
 	}
 
-	errValidation, msg := common.Validate(c.Validator, request)
-
-	if errValidation != nil {
-		c.Log.Warnf("validation value : %+v", msg)
-		return common.JSONBadRequest(ctx, "bad request", msg)
-	}
-
 	if form, err := ctx.MultipartForm(); err == nil {
 		files := form.File["icon"]
 		for _, file := range files {
@@ -88,12 +73,9 @@ func (c *TypeController) Create(ctx *fiber.Ctx) error {
 		}
 	}
 
-	err = c.TypeService.Create(ctx.UserContext(), request)
+	code, validationMessage, err := c.TypeService.Create(ctx.UserContext(), request)
 	if err != nil {
-		if errors.Is(common.ErrBadRequest, err) {
-			return common.JSONBadRequest(ctx, err.Error(), nil)
-		}
-		return common.JSONError(ctx, err.Error(), nil)
+		return common.JSONFromError(ctx, code, err, validationMessage)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{

@@ -42,7 +42,7 @@ func Bootstrap(config *BootstrapConfig) {
 
 	homeController := controller.NewHomeController(config.Config)
 	authController := controller.NewAuthController(config.Config, authService, config.Log)
-	typeController := controller.NewTypeController(typeService, config.Log, config.Validator)
+	typeController := controller.NewTypeController(typeService, config.Log)
 	provinceController := controller.NewProvinceController(provinceService, config.Log)
 	cityController := controller.NewCityController(cityService, config.Log)
 	vendorController := controller.NewVendorController(vendorService, config.Log)

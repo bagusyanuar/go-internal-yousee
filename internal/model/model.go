@@ -7,7 +7,6 @@ type APIResponse[T any] struct {
 }
 
 type Response[T any] struct {
-	Code int
 	Data T
 	Meta *MetaPagination
 }
