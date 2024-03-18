@@ -5,10 +5,19 @@ import (
 	"github.com/bagusyanuar/go-internal-yousee/internal/model"
 )
 
-func TypeToResponse(itemType *entity.Type) *model.TypeResponse {
+func ToType(itemType *entity.Type) *model.TypeResponse {
 	return &model.TypeResponse{
 		ID:   itemType.ID,
 		Name: itemType.Name,
 		Icon: itemType.Icon,
 	}
+}
+
+func ToTypes(entities []entity.Type) []model.TypeResponse {
+	var types []model.TypeResponse
+	for _, entity := range entities {
+		t := *ToType(&entity)
+		types = append(types, t)
+	}
+	return types
 }

@@ -23,7 +23,9 @@ func (c *RouteConfig) Setup() {
 	// apiRoute := c.App.Group("/api")
 	apiRoute := c.App.Group("/api")
 	c.PublicRoute(apiRoute)
-	c.ProtectedRoute(apiRoute)
+
+	authMiddleware := c.JWTMiddleware.Verify()
+	c.ProtectedRoute(apiRoute, authMiddleware)
 }
 
 func (c *RouteConfig) PublicRoute(route fiber.Router) {
@@ -32,31 +34,31 @@ func (c *RouteConfig) PublicRoute(route fiber.Router) {
 
 }
 
-func (c *RouteConfig) ProtectedRoute(route fiber.Router) {
+func (c *RouteConfig) ProtectedRoute(route fiber.Router, authMiddleware fiber.Handler) {
 
 	//media type routes
-	typeGroup := route.Group("/type", c.JWTMiddleware.Verify())
+	typeGroup := route.Group("/media-type", authMiddleware)
 	typeGroup.Get("/", c.TypeController.FindAll)
 	typeGroup.Post("/", c.TypeController.Create)
 	typeGroup.Get("/:id", c.TypeController.FindByID)
 	typeGroup.Put("/:id", c.TypeController.Patch)
 	typeGroup.Delete("/:id/delete", c.TypeController.Delete)
 
-	provinceGroup := route.Group("/province", c.JWTMiddleware.Verify())
+	provinceGroup := route.Group("/province", authMiddleware)
 	provinceGroup.Get("/", c.ProvinceController.FindAll)
 
-	cityGroup := route.Group("/city", c.JWTMiddleware.Verify())
+	cityGroup := route.Group("/city", authMiddleware)
 	cityGroup.Get("/", c.CityController.FindAll)
 	cityGroup.Get("/:id", c.CityController.FindByID)
 
-	vendorGroup := route.Group("/vendor", c.JWTMiddleware.Verify())
+	vendorGroup := route.Group("/vendor", authMiddleware)
 	vendorGroup.Get("/", c.VendorController.FindAll)
 	vendorGroup.Post("/", c.VendorController.Create)
 	vendorGroup.Get("/:id", c.VendorController.FindByID)
 	vendorGroup.Put("/:id", c.VendorController.Patch)
 	vendorGroup.Delete("/:id", c.VendorController.Delete)
 
-	itemGrop := route.Group("/item", c.JWTMiddleware.Verify())
+	itemGrop := route.Group("/item", authMiddleware)
 	itemGrop.Get("/", c.ItemController.FindAll)
 	itemGrop.Get("/", c.ItemController.Create)
 	itemGrop.Get("/:id", c.ItemController.FindByID)

@@ -17,6 +17,13 @@ func NewFiber() *fiber.App {
 			}
 
 			if err != nil {
+				if code == 404 {
+					return c.Status(code).JSON(&fiber.Map{
+						"code":    code,
+						"message": "route not found",
+						"data":    nil,
+					})
+				}
 				return c.Status(code).JSON(&fiber.Map{
 					"code":    code,
 					"message": err.Error(),

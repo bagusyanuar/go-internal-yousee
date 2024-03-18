@@ -9,7 +9,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type TypeController struct {
@@ -27,15 +26,26 @@ func NewTypeController(typeService service.TypeService, log *logrus.Logger, vali
 }
 
 func (c *TypeController) FindAll(ctx *fiber.Ctx) error {
-	param := ctx.Query("param")
-	res, err := c.TypeService.FindAll(ctx.UserContext(), param)
+	param := ctx.Query("name")
+	page := ctx.QueryInt("page")
+	perPage := ctx.QueryInt("per_page")
+
+	queryString := model.QueryString[string]{
+		Query: param,
+		QueryPagination: model.PaginationQuery{
+			Page:    page,
+			PerPage: perPage,
+		},
+	}
+	response, err := c.TypeService.FindAll(ctx.UserContext(), queryString)
 	if err != nil {
 		return common.JSONError(ctx, err.Error(), nil)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{
-		Message: "successfully show types",
-		Data:    res,
+		Message: "successfully show media types",
+		Data:    response.Data,
+		Meta:    response.Meta,
 	})
 }
 
@@ -44,7 +54,7 @@ func (c *TypeController) FindByID(ctx *fiber.Ctx) error {
 
 	res, err := c.TypeService.FindByID(ctx.UserContext(), id)
 	if err != nil {
-		if errors.Is(gorm.ErrRecordNotFound, err) {
+		if errors.Is(common.ErrRecordNotFound, err) {
 			return common.JSONNotFound(ctx, err.Error(), nil)
 		}
 		return common.JSONError(ctx, err.Error(), nil)

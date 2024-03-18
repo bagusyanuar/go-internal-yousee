@@ -22,22 +22,42 @@ const (
 
 type (
 	TypeService interface {
-		FindAll(ctx context.Context, param string) ([]model.TypeResponse, error)
+		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.TypeResponse], error)
 		FindByID(ctx context.Context, id string) (*model.TypeResponse, error)
 		Create(ctx context.Context, request *model.TypeRequest) error
 		Patch(ctx context.Context, id string, request *model.TypeRequest) error
 		Delete(ctx context.Context, id string) error
 	}
 
-	itemType struct {
+	typeStruct struct {
 		TypeRepository repositories.TypeRepository
 		Log            *logrus.Logger
 		Validator      *validator.Validate
 	}
 )
 
+// FindAll implements TypeService.
+func (service *typeStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.TypeResponse], error) {
+	var types []model.TypeResponse
+	response, err := service.TypeRepository.FindAll(ctx, queryString)
+	if err != nil {
+		return model.Response[[]model.TypeResponse]{Code: 422}, err
+	}
+	types = transformer.ToTypes(response.Data)
+	return model.Response[[]model.TypeResponse]{Data: types, Meta: response.Meta, Code: 200}, nil
+}
+
+// FindByID implements TypeService.
+func (service *typeStruct) FindByID(ctx context.Context, id string) (*model.TypeResponse, error) {
+	entity, err := service.TypeRepository.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return transformer.ToType(entity), nil
+}
+
 // Delete implements TypeService.
-func (service *itemType) Delete(ctx context.Context, id string) error {
+func (service *typeStruct) Delete(ctx context.Context, id string) error {
 	err := service.TypeRepository.Delete(ctx, id)
 	if err != nil {
 		return err
@@ -46,7 +66,7 @@ func (service *itemType) Delete(ctx context.Context, id string) error {
 }
 
 // Patch implements TypeService.
-func (service *itemType) Patch(ctx context.Context, id string, request *model.TypeRequest) error {
+func (service *typeStruct) Patch(ctx context.Context, id string, request *model.TypeRequest) error {
 	name := request.Name
 	entity := &entity.Type{
 		Name: name,
@@ -67,17 +87,8 @@ func (service *itemType) Patch(ctx context.Context, id string, request *model.Ty
 	return nil
 }
 
-// FindByID implements TypeService.
-func (service *itemType) FindByID(ctx context.Context, id string) (*model.TypeResponse, error) {
-	entity, err := service.TypeRepository.FindByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return transformer.TypeToResponse(entity), nil
-}
-
 // Create implements TypeService.
-func (service *itemType) Create(ctx context.Context, request *model.TypeRequest) error {
+func (service *typeStruct) Create(ctx context.Context, request *model.TypeRequest) error {
 
 	name := request.Name
 
@@ -99,21 +110,7 @@ func (service *itemType) Create(ctx context.Context, request *model.TypeRequest)
 	return nil
 }
 
-// FindAll implements TypeService.
-func (service *itemType) FindAll(ctx context.Context, param string) ([]model.TypeResponse, error) {
-	var results []model.TypeResponse
-	entities, err := service.TypeRepository.FindAll(ctx, param)
-	if err != nil {
-		return results, err
-	}
-	for _, entity := range entities {
-		t := *transformer.TypeToResponse(&entity)
-		results = append(results, t)
-	}
-	return results, nil
-}
-
-func (service *itemType) upload(icon *multipart.FileHeader) (*string, error) {
+func (service *typeStruct) upload(icon *multipart.FileHeader) (*string, error) {
 
 	iconName := new(string)
 	if icon != nil {
@@ -136,7 +133,7 @@ func (service *itemType) upload(icon *multipart.FileHeader) (*string, error) {
 }
 
 func NewItemTypeService(typeRepository repositories.TypeRepository, log *logrus.Logger, validator *validator.Validate) TypeService {
-	return &itemType{
+	return &typeStruct{
 		TypeRepository: typeRepository,
 		Log:            log,
 		Validator:      validator,
