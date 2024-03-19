@@ -25,7 +25,7 @@ type (
 		FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]model.TypeResponse]
 		FindByID(ctx context.Context, id string) model.InterfaceResponse[*model.TypeResponse]
 		Create(ctx context.Context, request *model.TypeRequest) model.InterfaceResponse[*model.TypeResponse]
-		Patch(ctx context.Context, id string, request *model.TypeRequest) error
+		Patch(ctx context.Context, id string, request *model.TypeRequest) model.InterfaceResponse[*model.TypeResponse]
 		Delete(ctx context.Context, id string) error
 	}
 
@@ -113,31 +113,55 @@ func (service *typeStruct) Create(ctx context.Context, request *model.TypeReques
 	}
 }
 
+// Patch implements TypeService.
+func (service *typeStruct) Patch(ctx context.Context, id string, request *model.TypeRequest) model.InterfaceResponse[*model.TypeResponse] {
+	errValidation, msg := common.Validate(service.Validator, request)
+	if errValidation != nil {
+		return model.InterfaceResponse[*model.TypeResponse]{
+			Status:     common.StatusBadRequest,
+			Error:      errValidation,
+			Validation: msg,
+		}
+	}
+
+	//upload icon
+	icon, err := service.upload(request.Icon)
+	if err != nil {
+		return model.InterfaceResponse[*model.TypeResponse]{
+			Status: common.StatusInternalServerError,
+			Error:  err,
+		}
+	}
+
+	name := request.Name
+	data := map[string]interface{}{
+		"name": name,
+	}
+	if icon != nil {
+		data = map[string]interface{}{
+			"name": name,
+			"icon": icon,
+		}
+	}
+
+	response := service.TypeRepository.Patch(ctx, id, data)
+	if response.Error != nil {
+		return model.InterfaceResponse[*model.TypeResponse]{
+			Status: response.Status,
+			Error:  response.Error,
+		}
+	}
+	item := transformer.ToType(response.Data)
+	return model.InterfaceResponse[*model.TypeResponse]{
+		Status: response.Status,
+		Error:  nil,
+		Data:   item,
+	}
+}
+
 // Delete implements TypeService.
 func (service *typeStruct) Delete(ctx context.Context, id string) error {
 	err := service.TypeRepository.Delete(ctx, id)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Patch implements TypeService.
-func (service *typeStruct) Patch(ctx context.Context, id string, request *model.TypeRequest) error {
-	name := request.Name
-	entity := &entity.Type{
-		Name: name,
-	}
-
-	if request.Icon != nil {
-		icon, err := service.upload(request.Icon)
-		if err != nil {
-			return err
-		}
-		entity.Icon = icon
-	}
-
-	err := service.TypeRepository.Patch(ctx, id, entity)
 	if err != nil {
 		return err
 	}

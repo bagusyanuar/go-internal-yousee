@@ -18,7 +18,7 @@ type (
 		FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]entity.Type]
 		FindByID(ctx context.Context, id string) model.InterfaceResponse[*entity.Type]
 		Create(ctx context.Context, data *entity.Type) model.InterfaceResponse[*entity.Type]
-		Patch(ctx context.Context, id string, entity *entity.Type) error
+		Patch(ctx context.Context, id string, data map[string]interface{}) model.InterfaceResponse[*entity.Type]
 		Delete(ctx context.Context, id string) error
 	}
 
@@ -114,20 +114,47 @@ func (repository *typeStruct) Create(ctx context.Context, data *entity.Type) mod
 	}
 }
 
+// Patch implements TypeRepository.
+func (repository *typeStruct) Patch(ctx context.Context, id string, data map[string]interface{}) model.InterfaceResponse[*entity.Type] {
+	status := common.StatusUnProccessableEntity
+	tx := repository.DB.WithContext(ctx)
+
+	item := new(entity.Type)
+	if err := tx.Where("id = ?", id).First(&item).Error; err != nil {
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			status = common.StatusNotFound
+			return model.InterfaceResponse[*entity.Type]{
+				Status: status,
+				Error:  err,
+			}
+		}
+		return model.InterfaceResponse[*entity.Type]{
+			Status: status,
+			Error:  err,
+		}
+	}
+
+	if err := tx.Model(&item).
+		Omit(clause.Associations).
+		Where("id = ?", id).
+		Updates(&data).Error; err != nil {
+		return model.InterfaceResponse[*entity.Type]{
+			Status: status,
+			Error:  err,
+		}
+	}
+	return model.InterfaceResponse[*entity.Type]{
+		Status: status,
+		Error:  nil,
+		Data:   item,
+	}
+}
+
 // Delete implements TypeRepository.
 func (repository *typeStruct) Delete(ctx context.Context, id string) error {
 	entity := new(entity.Type)
 	tx := repository.DB.WithContext(ctx)
 	if err := tx.Omit(clause.Associations).Where("id = ?", id).Unscoped().Delete(&entity).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
-// Patch implements TypeRepository.
-func (repository *typeStruct) Patch(ctx context.Context, id string, entity *entity.Type) error {
-	tx := repository.DB.WithContext(ctx)
-	if err := tx.Omit(clause.Associations).Where("id = ?", id).Updates(&entity).Error; err != nil {
 		return err
 	}
 	return nil

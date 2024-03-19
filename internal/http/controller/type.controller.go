@@ -107,14 +107,18 @@ func (c *TypeController) Patch(ctx *fiber.Ctx) error {
 		}
 	}
 
-	err = c.TypeService.Patch(ctx.UserContext(), id, request)
-	if err != nil {
-		c.Log.Errorf("failed to patch data : %+v", err)
-		return common.JSONError(ctx, err.Error(), nil)
+	response := c.TypeService.Patch(ctx.UserContext(), id, request)
+	if response.Error != nil {
+		var data any
+		if response.Status == common.StatusBadRequest {
+			data = response.Validation
+		}
+		return common.JSONFromError(ctx, response.Status, response.Error, data)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{
-		Message: "successfully patch media type",
+		Message: "successfully update media type",
+		Data:    response.Data,
 	})
 }
 
