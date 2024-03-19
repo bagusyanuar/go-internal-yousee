@@ -19,7 +19,7 @@ type (
 		FindByID(ctx context.Context, id string) model.InterfaceResponse[*entity.Type]
 		Create(ctx context.Context, data *entity.Type) model.InterfaceResponse[*entity.Type]
 		Patch(ctx context.Context, id string, data map[string]interface{}) model.InterfaceResponse[*entity.Type]
-		Delete(ctx context.Context, id string) error
+		Delete(ctx context.Context, id string) model.InterfaceResponse[any]
 	}
 
 	typeStruct struct {
@@ -151,13 +151,41 @@ func (repository *typeStruct) Patch(ctx context.Context, id string, data map[str
 }
 
 // Delete implements TypeRepository.
-func (repository *typeStruct) Delete(ctx context.Context, id string) error {
-	entity := new(entity.Type)
+func (repository *typeStruct) Delete(ctx context.Context, id string) model.InterfaceResponse[any] {
+	var data *entity.Type
+	status := common.StatusUnProccessableEntity
 	tx := repository.DB.WithContext(ctx)
-	if err := tx.Omit(clause.Associations).Where("id = ?", id).Unscoped().Delete(&entity).Error; err != nil {
-		return err
+	if err := tx.
+		Where("id = ?", id).
+		First(&data).Error; err != nil {
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			repository.Log.Warnf("query failed : %+v", err)
+			status = common.StatusNotFound
+			return model.InterfaceResponse[any]{
+				Status: status,
+				Error:  common.ErrRecordNotFound,
+			}
+		}
+		return model.InterfaceResponse[any]{
+			Status: status,
+			Error:  err,
+		}
 	}
-	return nil
+
+	if err := tx.
+		Omit(clause.Associations).
+		Unscoped().
+		Delete(&data).Error; err != nil {
+		return model.InterfaceResponse[any]{
+			Status: status,
+			Error:  err,
+		}
+	}
+	status = common.StatusOK
+	return model.InterfaceResponse[any]{
+		Status: status,
+		Error:  nil,
+	}
 }
 
 func NewTypeRepository(db *gorm.DB, log *logrus.Logger) TypeRepository {

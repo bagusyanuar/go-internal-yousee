@@ -26,7 +26,7 @@ type (
 		FindByID(ctx context.Context, id string) model.InterfaceResponse[*model.TypeResponse]
 		Create(ctx context.Context, request *model.TypeRequest) model.InterfaceResponse[*model.TypeResponse]
 		Patch(ctx context.Context, id string, request *model.TypeRequest) model.InterfaceResponse[*model.TypeResponse]
-		Delete(ctx context.Context, id string) error
+		Delete(ctx context.Context, id string) model.InterfaceResponse[any]
 	}
 
 	typeStruct struct {
@@ -38,7 +38,6 @@ type (
 
 // FindAll implements TypeService.
 func (service *typeStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]model.TypeResponse] {
-	// var types []model.TypeResponse
 	response := service.TypeRepository.FindAll(ctx, queryString)
 	if response.Error != nil {
 		return model.InterfaceResponse[[]model.TypeResponse]{
@@ -160,12 +159,18 @@ func (service *typeStruct) Patch(ctx context.Context, id string, request *model.
 }
 
 // Delete implements TypeService.
-func (service *typeStruct) Delete(ctx context.Context, id string) error {
-	err := service.TypeRepository.Delete(ctx, id)
-	if err != nil {
-		return err
+func (service *typeStruct) Delete(ctx context.Context, id string) model.InterfaceResponse[any] {
+	response := service.TypeRepository.Delete(ctx, id)
+	if response.Error != nil {
+		return model.InterfaceResponse[any]{
+			Error:  response.Error,
+			Status: response.Status,
+		}
 	}
-	return nil
+	return model.InterfaceResponse[any]{
+		Error:  nil,
+		Status: response.Status,
+	}
 }
 
 func (service *typeStruct) upload(icon *multipart.FileHeader) (*string, error) {

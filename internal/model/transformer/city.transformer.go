@@ -23,7 +23,7 @@ func ToCity(city *entity.City) *model.CityResponse {
 }
 
 func ToCities(entities []entity.City) []model.CityResponse {
-	var cities []model.CityResponse
+	cities := make([]model.CityResponse, 0)
 	for _, entity := range entities {
 		t := *ToCity(&entity)
 		cities = append(cities, t)

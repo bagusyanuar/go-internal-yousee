@@ -11,3 +11,8 @@ type CityProvince struct {
 	ID   uint64 `json:"id"`
 	Name string `json:"name"`
 }
+
+type CityQueryString struct {
+	Name     string `json:"name"`
+	Province string `json:"province"`
+}

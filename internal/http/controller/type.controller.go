@@ -124,9 +124,9 @@ func (c *TypeController) Patch(ctx *fiber.Ctx) error {
 
 func (c *TypeController) Delete(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
-	err := c.TypeService.Delete(ctx.UserContext(), id)
-	if err != nil {
-		return common.JSONError(ctx, err.Error(), nil)
+	response := c.TypeService.Delete(ctx.UserContext(), id)
+	if response.Error != nil {
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{

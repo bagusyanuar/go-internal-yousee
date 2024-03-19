@@ -25,6 +25,7 @@ func NewCityController(cityService service.CityService, log *logrus.Logger) *Cit
 
 func (c *CityController) FindAll(ctx *fiber.Ctx) error {
 	param := ctx.Query("name")
+	province := ctx.Query("province")
 	page := ctx.QueryInt("page")
 	perPage := ctx.QueryInt("per_page")
 
@@ -33,19 +34,23 @@ func (c *CityController) FindAll(ctx *fiber.Ctx) error {
 		PerPage: perPage,
 	}
 
-	queryString := model.QueryString[string]{
-		Query:           param,
+	queryString := model.QueryString[model.CityQueryString]{
+		Query: model.CityQueryString{
+			Name:     param,
+			Province: province,
+		},
 		QueryPagination: pagination,
 	}
-	response, err := c.CityService.FindAll(ctx.UserContext(), queryString)
-	if err != nil {
-		return common.JSONError(ctx, err.Error(), nil)
-	}
+	response := c.CityService.FindAll(ctx.UserContext(), queryString)
 
+	if response.Error != nil {
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
+	}
+	c.Log.Warnf("data result : %+v", response.Data)
 	return common.JSONSuccess(ctx, common.ResponseMap{
 		Message: "successfully show cities",
 		Data:    response.Data,
-		Meta:    response.Meta,
+		Meta:    response.MetaPagination,
 	})
 }
 

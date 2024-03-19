@@ -42,10 +42,11 @@ func (c *RouteConfig) ProtectedRoute(route fiber.Router, authMiddleware fiber.Ha
 	typeGroup.Post("/", c.TypeController.Create)
 	typeGroup.Get("/:id", c.TypeController.FindByID)
 	typeGroup.Put("/:id", c.TypeController.Patch)
-	typeGroup.Delete("/:id/delete", c.TypeController.Delete)
+	typeGroup.Delete("/:id", c.TypeController.Delete)
 
 	provinceGroup := route.Group("/province", authMiddleware)
 	provinceGroup.Get("/", c.ProvinceController.FindAll)
+	provinceGroup.Get("/:id", c.ProvinceController.FindByID)
 
 	cityGroup := route.Group("/city", authMiddleware)
 	cityGroup.Get("/", c.CityController.FindAll)

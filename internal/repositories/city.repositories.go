@@ -13,7 +13,7 @@ import (
 
 type (
 	CityRepository interface {
-		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.City], error)
+		FindAll(ctx context.Context, queryString model.QueryString[model.CityQueryString]) model.InterfaceResponse[[]entity.City]
 		FindByID(ctx context.Context, id string) (*entity.City, error)
 	}
 
@@ -24,27 +24,43 @@ type (
 )
 
 // FindAll implements CityRepository.
-func (repository *city) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.City], error) {
-	var cities []entity.City
-
+func (repository *city) FindAll(ctx context.Context, queryString model.QueryString[model.CityQueryString]) model.InterfaceResponse[[]entity.City] {
+	var data []entity.City
+	queryName := queryString.Query.Name
+	queryProvince := queryString.Query.Province
 	metaPagination := new(model.MetaPagination)
-	tx := repository.DB.WithContext(ctx)
-
-	if queryString.Query != "" {
-		q := "%" + queryString.Query + "%"
-		tx = tx.Where("name LIKE ?", q)
-	}
-
 	paginate := &common.Pagination{
 		Limit: queryString.QueryPagination.PerPage,
 		Page:  queryString.QueryPagination.Page,
 	}
-	if err := tx.Preload("Province").Scopes(common.Paginate(cities, paginate, tx)).Find(&cities).Error; err != nil {
-		return model.Response[[]entity.City]{}, err
+	response := model.InterfaceResponse[[]entity.City]{
+		Status:         common.StatusUnProccessableEntity,
+		MetaPagination: metaPagination,
 	}
 
-	metaPagination = transformer.ToMetaPagination(paginate)
-	return model.Response[[]entity.City]{Data: cities, Meta: metaPagination}, nil
+	tx := repository.DB.WithContext(ctx)
+
+	if queryName != "" {
+		q := "%" + queryName + "%"
+		tx = tx.Where("name LIKE ?", q)
+	}
+
+	if queryProvince != "" {
+		tx = tx.Where("province_id = ?", queryProvince)
+	}
+
+	if err := tx.
+		Preload("Province").
+		Scopes(common.Paginate(data, paginate, tx)).
+		Find(&data).Error; err != nil {
+		response.Error = err
+		return response
+	}
+
+	response.Status = common.StatusOK
+	response.Data = data
+	response.MetaPagination = transformer.ToMetaPagination(paginate)
+	return response
 }
 
 // FindByID implements CityRepository.

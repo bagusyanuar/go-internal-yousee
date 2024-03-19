@@ -9,4 +9,5 @@ var (
 	ErrInvalidJWTParse     = errors.New("invalid jwt parse")
 	ErrRecordNotFound      = errors.New("record not found")
 	ErrUnprocessableEntity = errors.New("unprocessable entity")
+	ErrUnknown             = errors.New("unknown error")
 )

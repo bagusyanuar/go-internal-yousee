@@ -12,13 +12,17 @@ func ProvinceToResponse(province *entity.Province) *model.ProvinceResponse {
 	}
 }
 
+func ToProvince(province *entity.Province) *model.ProvinceResponse {
+	return &model.ProvinceResponse{
+		ID:   province.ID,
+		Name: province.Name,
+	}
+}
+
 func ToProvinces(entities []entity.Province) []model.ProvinceResponse {
-	var provinces []model.ProvinceResponse
+	provinces := make([]model.ProvinceResponse, 0)
 	for _, entity := range entities {
-		t := model.ProvinceResponse{
-			ID:   entity.ID,
-			Name: entity.Name,
-		}
+		t := *ToProvince(&entity)
 		provinces = append(provinces, t)
 	}
 	return provinces

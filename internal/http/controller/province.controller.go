@@ -34,14 +34,27 @@ func (c *ProvinceController) FindAll(ctx *fiber.Ctx) error {
 		Query:           param,
 		QueryPagination: pagination,
 	}
-	response, err := c.ProvinceService.FindAll(ctx.UserContext(), queryString)
-	if err != nil {
-		return common.JSONError(ctx, err.Error(), nil)
+	response := c.ProvinceService.FindAll(ctx.UserContext(), queryString)
+	if response.Error != nil {
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{
 		Message: "successfully show provinces",
 		Data:    response.Data,
-		Meta:    response.Meta,
+		Meta:    response.MetaPagination,
+	})
+}
+
+func (c *ProvinceController) FindByID(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+
+	response := c.ProvinceService.FindByID(ctx.UserContext(), id)
+	if response.Error != nil {
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
+	}
+	return common.JSONSuccess(ctx, common.ResponseMap{
+		Message: "successfully show province",
+		Data:    response.Data,
 	})
 }

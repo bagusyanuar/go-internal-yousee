@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/model"
 	"github.com/bagusyanuar/go-internal-yousee/internal/model/transformer"
 	"github.com/bagusyanuar/go-internal-yousee/internal/repositories"
@@ -11,7 +12,7 @@ import (
 
 type (
 	CityService interface {
-		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.CityResponse], error)
+		FindAll(ctx context.Context, queryString model.QueryString[model.CityQueryString]) model.InterfaceResponse[[]model.CityResponse]
 		FindByID(ctx context.Context, id string) (*model.CityResponse, error)
 	}
 
@@ -22,14 +23,25 @@ type (
 )
 
 // FindAll implements CityService.
-func (service *city) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.CityResponse], error) {
-	var cities []model.CityResponse
-	response, err := service.CityRepository.FindAll(ctx, queryString)
-	if err != nil {
-		return model.Response[[]model.CityResponse]{}, err
+func (service *city) FindAll(ctx context.Context, queryString model.QueryString[model.CityQueryString]) model.InterfaceResponse[[]model.CityResponse] {
+	response := model.InterfaceResponse[[]model.CityResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
 	}
-	cities = transformer.ToCities(response.Data)
-	return model.Response[[]model.CityResponse]{Data: cities, Meta: response.Meta}, nil
+	repositoryResponse := service.CityRepository.FindAll(ctx, queryString)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		response.MetaPagination = repositoryResponse.MetaPagination
+		return response
+	}
+	data := transformer.ToCities(repositoryResponse.Data)
+
+	response.Status = repositoryResponse.Status
+	response.MetaPagination = repositoryResponse.MetaPagination
+	response.Data = data
+	response.Error = nil
+	return response
 }
 
 // FindByID implements CityService.
