@@ -15,9 +15,9 @@ import (
 
 type (
 	TypeRepository interface {
-		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Type], int, error)
-		FindByID(ctx context.Context, id string) (*entity.Type, int, error)
-		Create(ctx context.Context, entity *entity.Type) (int, error)
+		FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]entity.Type]
+		FindByID(ctx context.Context, id string) model.InterfaceResponse[*entity.Type]
+		Create(ctx context.Context, data *entity.Type) model.InterfaceResponse[*entity.Type]
 		Patch(ctx context.Context, id string, entity *entity.Type) error
 		Delete(ctx context.Context, id string) error
 	}
@@ -29,9 +29,9 @@ type (
 )
 
 // FindAll implements TypeRepository.
-func (repository *typeStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Type], int, error) {
+func (repository *typeStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]entity.Type] {
 	var data []entity.Type
-	code := common.StatusUnProccessableEntity
+	status := common.StatusUnProccessableEntity
 	metaPagination := new(model.MetaPagination)
 
 	tx := repository.DB.WithContext(ctx)
@@ -48,50 +48,70 @@ func (repository *typeStruct) FindAll(ctx context.Context, queryString model.Que
 
 	if err := tx.
 		Scopes(common.Paginate(data, paginate, tx)).
-		Preload("Abc").
 		Find(&data).Error; err != nil {
 		repository.Log.Warnf("query failed : %+v", err)
-		return model.Response[[]entity.Type]{}, code, err
+		return model.InterfaceResponse[[]entity.Type]{
+			Status:         status,
+			MetaPagination: metaPagination,
+			Error:          err,
+		}
 	}
-	code = common.StatusOK
+	status = common.StatusOK
 	metaPagination = transformer.ToMetaPagination(paginate)
-	return model.Response[[]entity.Type]{
-		Data: data,
-		Meta: metaPagination,
-	}, code, nil
+	return model.InterfaceResponse[[]entity.Type]{
+		Data:           data,
+		Status:         status,
+		MetaPagination: metaPagination,
+		Error:          nil,
+	}
 }
 
 // FindByID implements TypeRepository.
-func (repository *typeStruct) FindByID(ctx context.Context, id string) (*entity.Type, int, error) {
+func (repository *typeStruct) FindByID(ctx context.Context, id string) model.InterfaceResponse[*entity.Type] {
 	var data *entity.Type
-	code := common.StatusUnProccessableEntity
+	status := common.StatusUnProccessableEntity
 	tx := repository.DB.WithContext(ctx)
 	if err := tx.
-		Omit(clause.Associations).
-		Preload("ASD").
 		Where("id = ?", id).
 		First(&data).Error; err != nil {
 		if errors.Is(gorm.ErrRecordNotFound, err) {
 			repository.Log.Warnf("query failed : %+v", err)
-			code = common.StatusNotFound
-			return nil, code, common.ErrRecordNotFound
+			status = common.StatusNotFound
+			return model.InterfaceResponse[*entity.Type]{
+				Status: status,
+				Error:  common.ErrRecordNotFound,
+			}
 		}
-		return nil, code, err
+		return model.InterfaceResponse[*entity.Type]{
+			Status: status,
+			Error:  err,
+		}
 	}
-	code = common.StatusOK
-	return data, code, nil
+	status = common.StatusOK
+	return model.InterfaceResponse[*entity.Type]{
+		Data:   data,
+		Status: status,
+		Error:  nil,
+	}
 }
 
 // Create implements TypeRepository.
-func (repository *typeStruct) Create(ctx context.Context, entity *entity.Type) (int, error) {
-	code := common.StatusUnProccessableEntity
+func (repository *typeStruct) Create(ctx context.Context, data *entity.Type) model.InterfaceResponse[*entity.Type] {
+	status := common.StatusUnProccessableEntity
 	tx := repository.DB.WithContext(ctx)
-	if err := tx.Create(entity).Error; err != nil {
+	if err := tx.Create(&data).Error; err != nil {
 		repository.Log.Warnf("query failed : %+v", err)
-		return code, err
+		return model.InterfaceResponse[*entity.Type]{
+			Status: status,
+			Error:  err,
+		}
 	}
-	code = common.StatusOK
-	return code, nil
+	status = common.StatusCreated
+	return model.InterfaceResponse[*entity.Type]{
+		Data:   data,
+		Status: status,
+		Error:  nil,
+	}
 }
 
 // Delete implements TypeRepository.

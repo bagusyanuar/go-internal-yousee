@@ -1,0 +1,16 @@
+{
+    "client": "Thunder Client",
+    "environmentName": "go-internal-yousee",
+    "dateExported": "2024-03-19T08:30:31.076Z",
+    "version": "1.0",
+    "variables": [
+        {
+            "name": "url",
+            "value": "http://localhost:8000/api/"
+        },
+        {
+            "name": "access_token",
+            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJZT1VTRUUtQVBQIiwiZXhwIjoxNzEwODM3MTE0LCJ1c2VyX2lkIjoxfQ.Eta0RykLKEOFzzH7MR2j14IYwfM7uQPDZv0al31JglA"
+        }
+    ]
+}

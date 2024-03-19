@@ -1,0 +1,115 @@
+{
+    "client": "Thunder Client",
+    "collectionName": "go-internal-yousee",
+    "dateExported": "2024-03-19T08:29:47.586Z",
+    "version": "1.1",
+    "folders": [
+        {
+            "_id": "cb811145-343c-457c-8a0d-1b4172600eab",
+            "name": "Auth",
+            "containerId": "",
+            "created": "2024-03-19T07:01:55.734Z",
+            "sortNum": 10000
+        },
+        {
+            "_id": "9a55801c-a3ff-4eb7-9daf-665354062165",
+            "name": "media-type",
+            "containerId": "",
+            "created": "2024-03-19T07:05:17.996Z",
+            "sortNum": 20000,
+            "settings": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": "{{access_token}}"
+                }
+            }
+        }
+    ],
+    "requests": [
+        {
+            "_id": "86c164f4-c604-46fe-8e52-9ad9353c74f8",
+            "colId": "75f2fa1b-aeb2-426f-af97-fbfb19ab283d",
+            "containerId": "cb811145-343c-457c-8a0d-1b4172600eab",
+            "name": "sign-in",
+            "url": "sign-in",
+            "method": "POST",
+            "sortNum": 10000,
+            "created": "2024-03-19T07:02:04.749Z",
+            "modified": "2024-03-19T07:04:55.105Z",
+            "headers": [],
+            "params": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"username\": \"admin1\",\n  \"password\": \"12345678\"\n}",
+                "form": []
+            },
+            "tests": [
+                {
+                    "type": "set-env-var",
+                    "custom": "json.data.access_token",
+                    "action": "setto",
+                    "value": "{{access_token}}"
+                }
+            ]
+        },
+        {
+            "_id": "d5e1104c-924b-41b2-b8e2-ffa20ecc0bc3",
+            "colId": "75f2fa1b-aeb2-426f-af97-fbfb19ab283d",
+            "containerId": "9a55801c-a3ff-4eb7-9daf-665354062165",
+            "name": "find all data",
+            "url": "media-type",
+            "method": "GET",
+            "sortNum": 20000,
+            "created": "2024-03-19T07:05:35.013Z",
+            "modified": "2024-03-19T07:44:14.813Z",
+            "headers": [],
+            "params": [],
+            "tests": []
+        },
+        {
+            "_id": "a0a32d68-f008-4124-8c41-481e09dd4427",
+            "colId": "75f2fa1b-aeb2-426f-af97-fbfb19ab283d",
+            "containerId": "9a55801c-a3ff-4eb7-9daf-665354062165",
+            "name": "find by id",
+            "url": "media-type/1",
+            "method": "GET",
+            "sortNum": 30000,
+            "created": "2024-03-19T07:43:30.537Z",
+            "modified": "2024-03-19T07:44:46.088Z",
+            "headers": [],
+            "params": [],
+            "tests": []
+        },
+        {
+            "_id": "597710bc-53ea-408a-b062-65a3177746b0",
+            "colId": "75f2fa1b-aeb2-426f-af97-fbfb19ab283d",
+            "containerId": "9a55801c-a3ff-4eb7-9daf-665354062165",
+            "name": "create",
+            "url": "media-type",
+            "method": "POST",
+            "sortNum": 40000,
+            "created": "2024-03-19T08:01:07.697Z",
+            "modified": "2024-03-19T08:25:41.980Z",
+            "headers": [],
+            "params": [],
+            "body": {
+                "type": "formdata",
+                "raw": "",
+                "form": [
+                    {
+                        "name": "name",
+                        "value": ""
+                    }
+                ],
+                "files": []
+            },
+            "tests": []
+        }
+    ],
+    "settings": {
+        "options": {
+            "baseUrl": "http://localhost:8000/api/"
+        },
+        "envId": "e4d52fe3-b55a-4cba-9fb2-c51657d6bbdd"
+    }
+}

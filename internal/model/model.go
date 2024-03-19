@@ -11,6 +11,14 @@ type Response[T any] struct {
 	Meta *MetaPagination
 }
 
+type InterfaceResponse[T any] struct {
+	Status         int
+	Data           T
+	MetaPagination *MetaPagination
+	Validation     any
+	Error          error
+}
+
 type QueryString[T any] struct {
 	Query           T
 	QueryPagination PaginationQuery

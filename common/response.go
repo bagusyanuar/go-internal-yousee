@@ -6,6 +6,7 @@ import (
 
 const (
 	StatusOK                   int = 200
+	StatusCreated              int = 201
 	StatusBadRequest           int = 400
 	StatusUnauthorized         int = 401
 	StatusForbidden            int = 403
@@ -78,16 +79,18 @@ func JSONNotFound(ctx *fiber.Ctx, message string, data any) error {
 }
 
 func JSONFromError(ctx *fiber.Ctx, code int, err error, data any) error {
-	if code != 500 {
+	switch code {
+	case StatusBadRequest:
+		return ctx.Status(code).JSON(APIResponse[any]{
+			Data:    data,
+			Message: "invalid data request",
+			Code:    code,
+		})
+	default:
 		return ctx.Status(code).JSON(APIResponse[any]{
 			Data:    data,
 			Message: err.Error(),
 			Code:    code,
 		})
 	}
-	return ctx.Status(500).JSON(APIResponse[any]{
-		Data:    data,
-		Message: err.Error(),
-		Code:    500,
-	})
 }

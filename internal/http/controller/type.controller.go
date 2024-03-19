@@ -32,28 +32,28 @@ func (c *TypeController) FindAll(ctx *fiber.Ctx) error {
 			PerPage: perPage,
 		},
 	}
-	response, code, err := c.TypeService.FindAll(ctx.UserContext(), queryString)
-	if err != nil {
-		return common.JSONFromError(ctx, code, err, nil)
+	response := c.TypeService.FindAll(ctx.UserContext(), queryString)
+	if response.Error != nil {
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{
 		Message: "successfully show media types",
 		Data:    response.Data,
-		Meta:    response.Meta,
+		Meta:    response.MetaPagination,
 	})
 }
 
 func (c *TypeController) FindByID(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 
-	response, code, err := c.TypeService.FindByID(ctx.UserContext(), id)
-	if err != nil {
-		return common.JSONFromError(ctx, code, err, nil)
+	response := c.TypeService.FindByID(ctx.UserContext(), id)
+	if response.Error != nil {
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 	return common.JSONSuccess(ctx, common.ResponseMap{
 		Message: "successfully show type",
-		Data:    response,
+		Data:    response.Data,
 	})
 }
 
@@ -73,13 +73,20 @@ func (c *TypeController) Create(ctx *fiber.Ctx) error {
 		}
 	}
 
-	code, validationMessage, err := c.TypeService.Create(ctx.UserContext(), request)
-	if err != nil {
-		return common.JSONFromError(ctx, code, err, validationMessage)
+	response := c.TypeService.Create(ctx.UserContext(), request)
+	if response.Error != nil {
+
+		var data any
+		if response.Status == common.StatusBadRequest {
+			data = response.Validation
+		}
+		c.Log.Warnf("failed : %+v", response.Validation)
+		return common.JSONFromError(ctx, response.Status, response.Error, data)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{
 		Message: "successfully create media type",
+		Data:    response.Data,
 	})
 }
 
