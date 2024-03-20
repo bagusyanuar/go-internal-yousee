@@ -79,18 +79,9 @@ func JSONNotFound(ctx *fiber.Ctx, message string, data any) error {
 }
 
 func JSONFromError(ctx *fiber.Ctx, code int, err error, data any) error {
-	switch code {
-	case StatusBadRequest:
-		return ctx.Status(code).JSON(APIResponse[any]{
-			Data:    data,
-			Message: "invalid data request",
-			Code:    code,
-		})
-	default:
-		return ctx.Status(code).JSON(APIResponse[any]{
-			Data:    data,
-			Message: err.Error(),
-			Code:    code,
-		})
-	}
+	return ctx.Status(code).JSON(APIResponse[any]{
+		Data:    data,
+		Message: err.Error(),
+		Code:    code,
+	})
 }

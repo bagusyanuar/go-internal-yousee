@@ -63,9 +63,16 @@ func (c *TypeController) Create(ctx *fiber.Ctx) error {
 
 	if err != nil {
 		c.Log.Warnf("failed to parse request body : %+v", err)
-		return common.JSONBadRequest(ctx, err.Error(), nil)
+		return common.JSONBadRequest(ctx, "failed to parse request body", nil)
 	}
 
+	//validate form request
+	validation := c.TypeService.ValidateFormRequest(ctx.UserContext(), request)
+	if validation.Error != nil {
+		return common.JSONBadRequest(ctx, "invalid form request", validation.Data)
+	}
+
+	//parsing multipart file
 	if form, err := ctx.MultipartForm(); err == nil {
 		files := form.File["icon"]
 		for _, file := range files {
@@ -75,13 +82,8 @@ func (c *TypeController) Create(ctx *fiber.Ctx) error {
 
 	response := c.TypeService.Create(ctx.UserContext(), request)
 	if response.Error != nil {
-
-		var data any
-		if response.Status == common.StatusBadRequest {
-			data = response.Validation
-		}
 		c.Log.Warnf("failed : %+v", response.Validation)
-		return common.JSONFromError(ctx, response.Status, response.Error, data)
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{

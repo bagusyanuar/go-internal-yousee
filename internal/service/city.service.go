@@ -13,7 +13,7 @@ import (
 type (
 	CityService interface {
 		FindAll(ctx context.Context, queryString model.QueryString[model.CityQueryString]) model.InterfaceResponse[[]model.CityResponse]
-		FindByID(ctx context.Context, id string) (*model.CityResponse, error)
+		FindByID(ctx context.Context, id string) model.InterfaceResponse[*model.CityResponse]
 	}
 
 	city struct {
@@ -45,12 +45,23 @@ func (service *city) FindAll(ctx context.Context, queryString model.QueryString[
 }
 
 // FindByID implements CityService.
-func (service *city) FindByID(ctx context.Context, id string) (*model.CityResponse, error) {
-	entity, err := service.CityRepository.FindByID(ctx, id)
-	if err != nil {
-		return nil, err
+func (service *city) FindByID(ctx context.Context, id string) model.InterfaceResponse[*model.CityResponse] {
+	response := model.InterfaceResponse[*model.CityResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
 	}
-	return transformer.ToCity(entity), nil
+	repositoryResponse := service.CityRepository.FindByID(ctx, id)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		return response
+	}
+
+	data := transformer.ToCity(repositoryResponse.Data)
+	response.Status = repositoryResponse.Status
+	response.Data = data
+	response.Error = nil
+	return response
 }
 
 func NewCityService(cityRepository repositories.CityRepository, log *logrus.Logger) CityService {

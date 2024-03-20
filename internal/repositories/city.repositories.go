@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 
 	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/entity"
@@ -14,7 +15,7 @@ import (
 type (
 	CityRepository interface {
 		FindAll(ctx context.Context, queryString model.QueryString[model.CityQueryString]) model.InterfaceResponse[[]entity.City]
-		FindByID(ctx context.Context, id string) (*entity.City, error)
+		FindByID(ctx context.Context, id string) model.InterfaceResponse[*entity.City]
 	}
 
 	city struct {
@@ -64,13 +65,28 @@ func (repository *city) FindAll(ctx context.Context, queryString model.QueryStri
 }
 
 // FindByID implements CityRepository.
-func (repository *city) FindByID(ctx context.Context, id string) (*entity.City, error) {
-	entity := new(entity.City)
-	tx := repository.DB.WithContext(ctx)
-	if err := tx.Preload("Province").Find(&entity).Error; err != nil {
-		return entity, err
+func (repository *city) FindByID(ctx context.Context, id string) model.InterfaceResponse[*entity.City] {
+	var data *entity.City
+	response := model.InterfaceResponse[*entity.City]{
+		Status: common.StatusUnProccessableEntity,
 	}
-	return entity, nil
+	tx := repository.DB.WithContext(ctx)
+	if err := tx.
+		Preload("Province").
+		Where("id = ?", id).
+		First(&data).Error; err != nil {
+		repository.Log.Warnf("query failed : %+v", err)
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			response.Status = common.StatusNotFound
+			response.Error = common.ErrRecordNotFound
+			return response
+		}
+		response.Error = err
+		return response
+	}
+	response.Status = common.StatusOK
+	response.Data = data
+	return response
 }
 
 func NewCityRepository(db *gorm.DB, log *logrus.Logger) CityRepository {

@@ -27,6 +27,7 @@ type (
 		Create(ctx context.Context, request *model.TypeRequest) model.InterfaceResponse[*model.TypeResponse]
 		Patch(ctx context.Context, id string, request *model.TypeRequest) model.InterfaceResponse[*model.TypeResponse]
 		Delete(ctx context.Context, id string) model.InterfaceResponse[any]
+		ValidateFormRequest(ctx context.Context, request *model.TypeRequest) model.InterfaceResponse[any]
 	}
 
 	typeStruct struct {
@@ -38,78 +39,80 @@ type (
 
 // FindAll implements TypeService.
 func (service *typeStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]model.TypeResponse] {
-	response := service.TypeRepository.FindAll(ctx, queryString)
-	if response.Error != nil {
-		return model.InterfaceResponse[[]model.TypeResponse]{
-			Status:         response.Status,
-			Error:          response.Error,
-			MetaPagination: response.MetaPagination,
-		}
+	response := model.InterfaceResponse[[]model.TypeResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
 	}
-	types := transformer.ToTypes(response.Data)
-	return model.InterfaceResponse[[]model.TypeResponse]{
-		Data:           types,
-		Status:         response.Status,
-		Error:          response.Error,
-		MetaPagination: response.MetaPagination,
+
+	repositoryResponse := service.TypeRepository.FindAll(ctx, queryString)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		response.MetaPagination = repositoryResponse.MetaPagination
+		return response
 	}
+
+	data := transformer.ToTypes(repositoryResponse.Data)
+	response.Status = repositoryResponse.Status
+	response.MetaPagination = repositoryResponse.MetaPagination
+	response.Data = data
+	response.Error = nil
+	return response
 }
 
 // FindByID implements TypeService.
 func (service *typeStruct) FindByID(ctx context.Context, id string) model.InterfaceResponse[*model.TypeResponse] {
-	response := service.TypeRepository.FindByID(ctx, id)
-	if response.Error != nil {
-		return model.InterfaceResponse[*model.TypeResponse]{
-			Status: response.Status,
-			Error:  response.Error,
-		}
+	response := model.InterfaceResponse[*model.TypeResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
 	}
-	data := transformer.ToType(response.Data)
-	return model.InterfaceResponse[*model.TypeResponse]{
-		Data:   data,
-		Status: response.Status,
-		Error:  response.Error,
+
+	repositoryResponse := service.TypeRepository.FindByID(ctx, id)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		return response
 	}
+
+	data := transformer.ToType(repositoryResponse.Data)
+	response.Status = repositoryResponse.Status
+	response.Data = data
+	response.Error = nil
+	return response
 }
 
 // Create implements TypeService.
 func (service *typeStruct) Create(ctx context.Context, request *model.TypeRequest) model.InterfaceResponse[*model.TypeResponse] {
-	errValidation, msg := common.Validate(service.Validator, request)
-	if errValidation != nil {
-		return model.InterfaceResponse[*model.TypeResponse]{
-			Status:     common.StatusBadRequest,
-			Error:      errValidation,
-			Validation: msg,
-		}
+	response := model.InterfaceResponse[*model.TypeResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
 	}
+
 	//upload icon
 	icon, err := service.upload(request.Icon)
 	if err != nil {
-		return model.InterfaceResponse[*model.TypeResponse]{
-			Status: common.StatusInternalServerError,
-			Error:  err,
-		}
+		response.Status = common.StatusInternalServerError
+		response.Error = err
+		return response
 	}
 
+	//set entry data
 	name := request.Name
-	entity := &entity.Type{
+	data := &entity.Type{
 		Name: name,
 		Icon: icon,
 	}
 
-	response := service.TypeRepository.Create(ctx, entity)
-	if response.Error != nil {
-		return model.InterfaceResponse[*model.TypeResponse]{
-			Status: response.Status,
-			Error:  response.Error,
-		}
+	repositoryResponse := service.TypeRepository.Create(ctx, data)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		return response
 	}
-	data := transformer.ToType(response.Data)
-	return model.InterfaceResponse[*model.TypeResponse]{
-		Status: response.Status,
-		Error:  nil,
-		Data:   data,
-	}
+
+	response.Status = repositoryResponse.Status
+	response.Error = nil
+	return response
 }
 
 // Patch implements TypeService.
@@ -171,6 +174,23 @@ func (service *typeStruct) Delete(ctx context.Context, id string) model.Interfac
 		Error:  nil,
 		Status: response.Status,
 	}
+}
+
+// ValidateFormRequest implements TypeService.
+func (service *typeStruct) ValidateFormRequest(ctx context.Context, request *model.TypeRequest) model.InterfaceResponse[any] {
+	response := model.InterfaceResponse[any]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrValidateRequest,
+	}
+
+	err, msg := common.Validate(service.Validator, request)
+	if err != nil {
+		response.Status = common.StatusBadRequest
+		response.Error = err
+		response.Data = msg
+		return response
+	}
+	return response
 }
 
 func (service *typeStruct) upload(icon *multipart.FileHeader) (*string, error) {

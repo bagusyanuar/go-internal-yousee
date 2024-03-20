@@ -10,4 +10,5 @@ var (
 	ErrRecordNotFound      = errors.New("record not found")
 	ErrUnprocessableEntity = errors.New("unprocessable entity")
 	ErrUnknown             = errors.New("unknown error")
+	ErrValidateRequest     = errors.New("unprocessable request validation")
 )
