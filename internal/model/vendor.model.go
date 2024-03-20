@@ -20,6 +20,6 @@ type VendorRequest struct {
 	Address  string `json:"address" validate:"required"`
 	Phone    string `json:"phone" validate:"required"`
 	Brand    string `json:"brand" validate:"required"`
-	PICName  string `json:"pic_name"`
+	PICName  string `json:"pic_name" validate:"required"`
 	PICPhone string `json:"pic_phone" validate:"required"`
 }

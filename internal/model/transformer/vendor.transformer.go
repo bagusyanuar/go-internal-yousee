@@ -20,7 +20,7 @@ func ToVendor(vendor *entity.Vendor) *model.VendorResponse {
 }
 
 func ToVendors(entities []entity.Vendor) []model.VendorResponse {
-	var vendors []model.VendorResponse
+	vendors := make([]model.VendorResponse, 0)
 	for _, entity := range entities {
 		t := *ToVendor(&entity)
 		vendors = append(vendors, t)

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 
 	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/entity"
@@ -14,99 +15,161 @@ import (
 
 type (
 	VendorRepository interface {
-		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Vendor], error)
-		FindByID(ctx context.Context, id string) (*entity.Vendor, error)
-		Create(ctx context.Context, entity *entity.Vendor) error
-		Patch(ctx context.Context, id string, data map[string]interface{}) error
-		Delete(ctx context.Context, id string) error
+		FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]entity.Vendor]
+		FindByID(ctx context.Context, id string) model.InterfaceResponse[*entity.Vendor]
+		Create(ctx context.Context, entry *entity.Vendor) model.InterfaceResponse[*entity.Vendor]
+		Patch(ctx context.Context, id string, entry map[string]interface{}) model.InterfaceResponse[*entity.Vendor]
+		Delete(ctx context.Context, id string) model.InterfaceResponse[any]
 	}
 
-	vendor struct {
+	vendorStruct struct {
 		DB  *gorm.DB
 		Log *logrus.Logger
 	}
 )
 
 // FindAll implements VendorRepository.
-func (repository *vendor) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Vendor], error) {
-	var vendors []entity.Vendor
-
+func (repository *vendorStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]entity.Vendor] {
+	var data []entity.Vendor
 	metaPagination := new(model.MetaPagination)
-	tx := repository.DB.WithContext(ctx)
-
-	if queryString.Query != "" {
-		q := "%" + queryString.Query + "%"
-		tx = tx.Where("name LIKE ?", q)
-	}
-
 	paginate := &common.Pagination{
 		Limit: queryString.QueryPagination.PerPage,
 		Page:  queryString.QueryPagination.Page,
 	}
-	if err := tx.Scopes(common.Paginate(vendors, paginate, tx)).Find(&vendors).Error; err != nil {
-		return model.Response[[]entity.Vendor]{}, err
+	response := model.InterfaceResponse[[]entity.Vendor]{
+		Status:         common.StatusUnProccessableEntity,
+		MetaPagination: metaPagination,
 	}
 
-	metaPagination = transformer.ToMetaPagination(paginate)
-	return model.Response[[]entity.Vendor]{Data: vendors, Meta: metaPagination}, nil
+	tx := repository.DB.WithContext(ctx)
+
+	if queryString.Query != "" {
+		q := "%" + queryString.Query + "%"
+		tx = tx.Where("name LIKE ?", q).
+			Or("address LIKE ?", q).
+			Or("brand LIKE ?", q)
+	}
+
+	if err := tx.
+		Scopes(common.Paginate(data, paginate, tx)).
+		Find(&data).Error; err != nil {
+		repository.Log.Warnf("query failed : %+v", err)
+		response.Error = err
+		return response
+	}
+
+	response.Status = common.StatusOK
+	response.Data = data
+	response.MetaPagination = transformer.ToMetaPagination(paginate)
+	return response
 }
 
 // FindByID implements VendorRepository.
-func (repository *vendor) FindByID(ctx context.Context, id string) (*entity.Vendor, error) {
-	entity := new(entity.Vendor)
-	tx := repository.DB.WithContext(ctx)
-	if err := tx.Where("id = ?", id).First(&entity).Error; err != nil {
-		return entity, err
+func (repository *vendorStruct) FindByID(ctx context.Context, id string) model.InterfaceResponse[*entity.Vendor] {
+	var data *entity.Vendor
+	response := model.InterfaceResponse[*entity.Vendor]{
+		Status: common.StatusUnProccessableEntity,
 	}
-	return entity, nil
+
+	tx := repository.DB.WithContext(ctx)
+	if err := tx.
+		Where("id = ?", id).
+		First(&data).Error; err != nil {
+		repository.Log.Warnf("query failed : %+v", err)
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			response.Status = common.StatusNotFound
+			response.Error = common.ErrRecordNotFound
+			return response
+		}
+		response.Error = err
+		return response
+	}
+	response.Status = common.StatusOK
+	response.Data = data
+	return response
 }
 
 // Create implements VendorRepository.
-func (repository *vendor) Create(ctx context.Context, entity *entity.Vendor) error {
-	tx := repository.DB.WithContext(ctx)
-	if err := tx.Create(entity).Error; err != nil {
-		return err
+func (repository *vendorStruct) Create(ctx context.Context, entry *entity.Vendor) model.InterfaceResponse[*entity.Vendor] {
+	response := model.InterfaceResponse[*entity.Vendor]{
+		Status: common.StatusUnProccessableEntity,
 	}
-	return nil
+
+	tx := repository.DB.WithContext(ctx)
+	if err := tx.Create(&entry).Error; err != nil {
+		repository.Log.Warnf("query failed : %+v", err)
+		response.Error = err
+		return response
+	}
+	response.Status = common.StatusCreated
+	return response
 }
 
 // Patch implements VendorRepository.
-func (repository *vendor) Patch(ctx context.Context, id string, data map[string]interface{}) error {
+func (repository *vendorStruct) Patch(ctx context.Context, id string, entry map[string]interface{}) model.InterfaceResponse[*entity.Vendor] {
+	response := model.InterfaceResponse[*entity.Vendor]{
+		Status: common.StatusUnProccessableEntity,
+	}
+
 	tx := repository.DB.WithContext(ctx)
 
-	v := new(entity.Vendor)
-	if err := tx.Where("id = ?", id).First(&v).Error; err != nil {
-		return err
+	data := new(entity.Vendor)
+	if err := tx.
+		Where("id = ?", id).
+		First(&data).Error; err != nil {
+		repository.Log.Warnf("query failed : %+v", err)
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			response.Error = err
+			response.Status = common.StatusNotFound
+			return response
+		}
+		response.Error = err
+		return response
 	}
 
-	if err := tx.Model(&v).
+	if err := tx.Model(&data).
 		Omit(clause.Associations).
 		Where("id = ?", id).
-		Updates(&data).Error; err != nil {
-		return err
+		Updates(&entry).Error; err != nil {
+		response.Error = err
+		return response
 	}
-	return nil
+	response.Status = common.StatusOK
+	return response
 }
 
 // Delete implements VendorRepository.
-func (repository *vendor) Delete(ctx context.Context, id string) error {
+func (repository *vendorStruct) Delete(ctx context.Context, id string) model.InterfaceResponse[any] {
+	var data *entity.Vendor
+	response := model.InterfaceResponse[any]{
+		Status: common.StatusUnProccessableEntity,
+	}
 	tx := repository.DB.WithContext(ctx)
-
-	v := new(entity.Vendor)
-	if err := tx.Where("id = ?", id).First(&v).Error; err != nil {
-		return err
+	if err := tx.
+		Where("id = ?", id).
+		First(&data).Error; err != nil {
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			repository.Log.Warnf("query failed : %+v", err)
+			response.Error = err
+			response.Status = common.StatusNotFound
+			return response
+		}
+		response.Error = err
+		return response
 	}
 
 	if err := tx.Omit(clause.Associations).
 		Where("id = ?", id).
 		Unscoped().
-		Delete(&v).Error; err != nil {
-		return err
+		Delete(&data).Error; err != nil {
+		response.Error = err
+		return response
 	}
-	return nil
+	response.Status = common.StatusOK
+	return response
 }
 func NewVendorRepository(db *gorm.DB, log *logrus.Logger) VendorRepository {
-	return &vendor{
+	return &vendorStruct{
 		DB:  db,
 		Log: log,
 	}

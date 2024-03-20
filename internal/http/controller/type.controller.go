@@ -82,7 +82,7 @@ func (c *TypeController) Create(ctx *fiber.Ctx) error {
 
 	response := c.TypeService.Create(ctx.UserContext(), request)
 	if response.Error != nil {
-		c.Log.Warnf("failed : %+v", response.Validation)
+		c.Log.Warnf("failed : %+v", response.Error.Error())
 		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 
@@ -117,7 +117,7 @@ func (c *TypeController) Patch(ctx *fiber.Ctx) error {
 
 	response := c.TypeService.Patch(ctx.UserContext(), id, request)
 	if response.Error != nil {
-		c.Log.Warnf("failed : %+v", response.Validation)
+		c.Log.Warnf("failed : %+v", response.Error.Error())
 		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 
@@ -130,6 +130,7 @@ func (c *TypeController) Delete(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 	response := c.TypeService.Delete(ctx.UserContext(), id)
 	if response.Error != nil {
+		c.Log.Warnf("failed : %+v", response.Error.Error())
 		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 

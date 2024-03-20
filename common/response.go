@@ -44,7 +44,7 @@ func JSONSuccess(ctx *fiber.Ctx, mapResponse ResponseMap) error {
 
 func JSONCreated(ctx *fiber.Ctx, mapResponse ResponseMap) error {
 	status := 201
-	message := "success"
+	message := "created"
 	if mapResponse.Message != "" {
 		message = mapResponse.Message
 	}

@@ -155,17 +155,20 @@ func (service *typeStruct) Patch(ctx context.Context, id string, request *model.
 
 // Delete implements TypeService.
 func (service *typeStruct) Delete(ctx context.Context, id string) model.InterfaceResponse[any] {
-	response := service.TypeRepository.Delete(ctx, id)
-	if response.Error != nil {
-		return model.InterfaceResponse[any]{
-			Error:  response.Error,
-			Status: response.Status,
-		}
+	response := model.InterfaceResponse[any]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
 	}
-	return model.InterfaceResponse[any]{
-		Error:  nil,
-		Status: response.Status,
+
+	repositoryResponse := service.TypeRepository.Delete(ctx, id)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		return response
 	}
+	response.Status = repositoryResponse.Status
+	response.Error = nil
+	return response
 }
 
 // ValidateFormRequest implements TypeService.

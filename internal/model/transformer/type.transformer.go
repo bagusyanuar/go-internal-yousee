@@ -14,7 +14,7 @@ func ToType(itemType *entity.Type) *model.TypeResponse {
 }
 
 func ToTypes(entities []entity.Type) []model.TypeResponse {
-	var types []model.TypeResponse
+	types := make([]model.TypeResponse, 0)
 	for _, entity := range entities {
 		t := *ToType(&entity)
 		types = append(types, t)

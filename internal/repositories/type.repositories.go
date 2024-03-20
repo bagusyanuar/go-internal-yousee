@@ -100,7 +100,6 @@ func (repository *typeStruct) Create(ctx context.Context, data *entity.Type) mod
 	}
 
 	response.Status = common.StatusCreated
-	response.Data = data
 	return response
 }
 

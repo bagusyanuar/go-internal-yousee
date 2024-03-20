@@ -15,27 +15,66 @@ import (
 
 type (
 	VendorService interface {
-		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.VendorResponse], error)
-		FindByID(ctx context.Context, id string) (*model.VendorResponse, error)
-		Create(ctx context.Context, request *model.VendorRequest) (any, error)
-		Patch(ctx context.Context, id string, request *model.VendorRequest) (any, error)
-		Delete(ctx context.Context, id string) error
+		FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]model.VendorResponse]
+		FindByID(ctx context.Context, id string) model.InterfaceResponse[*model.VendorResponse]
+		Create(ctx context.Context, request *model.VendorRequest) model.InterfaceResponse[*model.VendorResponse]
+		Patch(ctx context.Context, id string, request *model.VendorRequest) model.InterfaceResponse[*model.VendorResponse]
+		Delete(ctx context.Context, id string) model.InterfaceResponse[any]
+		ValidateFormRequest(ctx context.Context, request *model.VendorRequest) model.InterfaceResponse[any]
 	}
 
-	vendor struct {
+	vendorStruct struct {
 		VendorRepository repositories.VendorRepository
 		Log              *logrus.Logger
 		Validator        *validator.Validate
 	}
 )
 
-// Create implements VendorService.
-func (service *vendor) Create(ctx context.Context, request *model.VendorRequest) (any, error) {
+// FindAll implements VendorService.
+func (service *vendorStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]model.VendorResponse] {
+	response := model.InterfaceResponse[[]model.VendorResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
+	}
+	repositoryResponse := service.VendorRepository.FindAll(ctx, queryString)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		response.MetaPagination = repositoryResponse.MetaPagination
+		return response
+	}
+	data := transformer.ToVendors(repositoryResponse.Data)
+	response.Status = repositoryResponse.Status
+	response.MetaPagination = repositoryResponse.MetaPagination
+	response.Data = data
+	response.Error = nil
+	return response
+}
 
-	//validate form request
-	errValidation, msg := common.Validate(service.Validator, request)
-	if errValidation != nil {
-		return msg, common.ErrBadRequest
+// FindByID implements VendorService.
+func (service *vendorStruct) FindByID(ctx context.Context, id string) model.InterfaceResponse[*model.VendorResponse] {
+	response := model.InterfaceResponse[*model.VendorResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
+	}
+	repositoryResponse := service.VendorRepository.FindByID(ctx, id)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		return response
+	}
+	data := transformer.ToVendor(repositoryResponse.Data)
+	response.Status = repositoryResponse.Status
+	response.Data = data
+	response.Error = nil
+	return response
+}
+
+// Create implements VendorService.
+func (service *vendorStruct) Create(ctx context.Context, request *model.VendorRequest) model.InterfaceResponse[*model.VendorResponse] {
+	response := model.InterfaceResponse[*model.VendorResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
 	}
 
 	email := request.Email
@@ -47,7 +86,7 @@ func (service *vendor) Create(ctx context.Context, request *model.VendorRequest)
 	picPhone := request.PICPhone
 	lastSeen := time.Now()
 
-	data := &entity.Vendor{
+	entry := &entity.Vendor{
 		Name:     name,
 		Email:    email,
 		Address:  address,
@@ -58,19 +97,22 @@ func (service *vendor) Create(ctx context.Context, request *model.VendorRequest)
 		LastSeen: &lastSeen,
 	}
 
-	err := service.VendorRepository.Create(ctx, data)
-	if err != nil {
-		return nil, err
+	repositoryResponse := service.VendorRepository.Create(ctx, entry)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		return response
 	}
-	return nil, nil
+	response.Status = repositoryResponse.Status
+	response.Error = nil
+	return response
 }
 
 // Patch implements VendorService.
-func (service *vendor) Patch(ctx context.Context, id string, request *model.VendorRequest) (any, error) {
-	//validate form request
-	errValidation, msg := common.Validate(service.Validator, request)
-	if errValidation != nil {
-		return msg, common.ErrBadRequest
+func (service *vendorStruct) Patch(ctx context.Context, id string, request *model.VendorRequest) model.InterfaceResponse[*model.VendorResponse] {
+	response := model.InterfaceResponse[*model.VendorResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
 	}
 
 	email := request.Email
@@ -81,7 +123,7 @@ func (service *vendor) Patch(ctx context.Context, id string, request *model.Vend
 	picName := request.PICName
 	picPhone := request.PICPhone
 
-	data := map[string]interface{}{
+	entry := map[string]interface{}{
 		"name":     name,
 		"phone":    phone,
 		"brand":    brand,
@@ -91,36 +133,52 @@ func (service *vendor) Patch(ctx context.Context, id string, request *model.Vend
 		"address":  address,
 	}
 
-	err := service.VendorRepository.Patch(ctx, id, data)
-	if err != nil {
-		return nil, err
+	repositoryResponse := service.VendorRepository.Patch(ctx, id, entry)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		return response
 	}
-	return nil, nil
+	response.Status = repositoryResponse.Status
+	response.Error = nil
+	return response
 }
 
 // Delete implements VendorService.
-func (service *vendor) Delete(ctx context.Context, id string) error {
-	panic("unimplemented")
+func (service *vendorStruct) Delete(ctx context.Context, id string) model.InterfaceResponse[any] {
+	response := model.InterfaceResponse[any]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
+	}
+
+	repositoryResponse := service.VendorRepository.Delete(ctx, id)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		return response
+	}
+	response.Status = repositoryResponse.Status
+	response.Error = nil
+	return response
 }
 
-// FindAll implements VendorService.
-func (service *vendor) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.VendorResponse], error) {
-	var vendors []model.VendorResponse
-	response, err := service.VendorRepository.FindAll(ctx, queryString)
-	if err != nil {
-		return model.Response[[]model.VendorResponse]{}, err
+// ValidateFormRequest implements VendorService.
+func (service *vendorStruct) ValidateFormRequest(ctx context.Context, request *model.VendorRequest) model.InterfaceResponse[any] {
+	response := model.InterfaceResponse[any]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrValidateRequest,
 	}
-	vendors = transformer.ToVendors(response.Data)
-	return model.Response[[]model.VendorResponse]{Data: vendors, Meta: response.Meta}, nil
-}
 
-// FindByID implements VendorService.
-func (service *vendor) FindByID(ctx context.Context, id string) (*model.VendorResponse, error) {
-	entity, err := service.VendorRepository.FindByID(ctx, id)
+	err, msg := common.Validate(service.Validator, request)
 	if err != nil {
-		return nil, err
+		response.Status = common.StatusBadRequest
+		response.Error = err
+		response.Data = msg
+		return response
 	}
-	return transformer.ToVendor(entity), nil
+	response.Status = common.StatusOK
+	response.Error = nil
+	return response
 }
 
 func NewVendorService(
@@ -128,7 +186,7 @@ func NewVendorService(
 	log *logrus.Logger,
 	validator *validator.Validate,
 ) VendorService {
-	return &vendor{
+	return &vendorStruct{
 		VendorRepository: vendorRepository,
 		Log:              log,
 		Validator:        validator,

@@ -1,14 +1,11 @@
 package controller
 
 import (
-	"errors"
-
 	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/model"
 	"github.com/bagusyanuar/go-internal-yousee/internal/service"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type (
@@ -30,40 +27,36 @@ func (c *VendorController) FindAll(ctx *fiber.Ctx) error {
 	page := ctx.QueryInt("page")
 	perPage := ctx.QueryInt("per_page")
 
-	pagination := model.PaginationQuery{
-		Page:    page,
-		PerPage: perPage,
+	queryString := model.QueryString[string]{
+		Query: param,
+		QueryPagination: model.PaginationQuery{
+			Page:    page,
+			PerPage: perPage,
+		},
 	}
 
-	queryString := model.QueryString[string]{
-		Query:           param,
-		QueryPagination: pagination,
-	}
-	response, err := c.VendorService.FindAll(ctx.UserContext(), queryString)
-	if err != nil {
-		return common.JSONError(ctx, err.Error(), nil)
+	response := c.VendorService.FindAll(ctx.UserContext(), queryString)
+	if response.Error != nil {
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{
 		Message: "successfully show vendors",
 		Data:    response.Data,
-		Meta:    response.Meta,
+		Meta:    response.MetaPagination,
 	})
 }
 
 func (c *VendorController) FindByID(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 
-	res, err := c.VendorService.FindByID(ctx.UserContext(), id)
-	if err != nil {
-		if errors.Is(gorm.ErrRecordNotFound, err) {
-			return common.JSONNotFound(ctx, err.Error(), nil)
-		}
-		return common.JSONError(ctx, err.Error(), nil)
+	response := c.VendorService.FindByID(ctx.UserContext(), id)
+	if response.Error != nil {
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 	return common.JSONSuccess(ctx, common.ResponseMap{
 		Message: "successfully show vendor",
-		Data:    res,
+		Data:    response.Data,
 	})
 }
 
@@ -73,18 +66,22 @@ func (c *VendorController) Create(ctx *fiber.Ctx) error {
 
 	if err != nil {
 		c.Log.Warnf("failed to parse request body : %+v", err)
-		return common.JSONBadRequest(ctx, err.Error(), nil)
+		return common.JSONBadRequest(ctx, "failed to parse request body", nil)
 	}
 
-	validationMsg, err := c.VendorService.Create(ctx.UserContext(), request)
-	if err != nil {
-		if errors.Is(common.ErrBadRequest, err) {
-			return common.JSONBadRequest(ctx, "bad request", validationMsg)
-		}
-		return common.JSONError(ctx, err.Error(), nil)
+	//validate form request
+	validation := c.VendorService.ValidateFormRequest(ctx.UserContext(), request)
+	if validation.Error != nil {
+		return common.JSONBadRequest(ctx, "invalid form request", validation.Data)
 	}
 
-	return common.JSONSuccess(ctx, common.ResponseMap{
+	response := c.VendorService.Create(ctx.UserContext(), request)
+	if response.Error != nil {
+		c.Log.Warnf("failed : %+v", response.Validation)
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
+	}
+
+	return common.JSONCreated(ctx, common.ResponseMap{
 		Message: "successfully create vendor",
 	})
 }
@@ -96,37 +93,36 @@ func (c *VendorController) Patch(ctx *fiber.Ctx) error {
 
 	if err != nil {
 		c.Log.Warnf("failed to parse request body : %+v", err)
-		return common.JSONBadRequest(ctx, err.Error(), nil)
+		return common.JSONBadRequest(ctx, "failed to parse request body", nil)
 	}
 
-	validationMsg, err := c.VendorService.Patch(ctx.UserContext(), id, request)
-	if err != nil {
-		switch err {
-		case common.ErrBadRequest:
-			return common.JSONBadRequest(ctx, "bad request", validationMsg)
-		case gorm.ErrRecordNotFound:
-			return common.JSONNotFound(ctx, err.Error(), nil)
-		default:
-			return common.JSONError(ctx, err.Error(), nil)
-		}
+	//validate form request
+	validation := c.VendorService.ValidateFormRequest(ctx.UserContext(), request)
+	if validation.Error != nil {
+		c.Log.Warnf("invalid form request : %+v", err)
+		return common.JSONBadRequest(ctx, "invalid form request", validation.Data)
+	}
+
+	response := c.VendorService.Patch(ctx.UserContext(), id, request)
+	if response.Error != nil {
+		c.Log.Warnf("failed : %+v", response.Error.Error())
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{
-		Message: "successfully patch vendor",
+		Message: "successfully update vendor",
 	})
 }
 
 func (c *VendorController) Delete(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
-	err := c.VendorService.Delete(ctx.UserContext(), id)
-	if err != nil {
-		if errors.Is(gorm.ErrRecordNotFound, err) {
-			return common.JSONNotFound(ctx, err.Error(), nil)
-		}
-		return common.JSONError(ctx, err.Error(), nil)
+	response := c.VendorService.Delete(ctx.UserContext(), id)
+	if response.Error != nil {
+		c.Log.Warnf("failed : %+v", response.Error.Error())
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{
-		Message: "successfully delete media type",
+		Message: "successfully delete vendor",
 	})
 }
