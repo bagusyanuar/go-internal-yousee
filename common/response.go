@@ -42,6 +42,20 @@ func JSONSuccess(ctx *fiber.Ctx, mapResponse ResponseMap) error {
 	})
 }
 
+func JSONCreated(ctx *fiber.Ctx, mapResponse ResponseMap) error {
+	status := 201
+	message := "success"
+	if mapResponse.Message != "" {
+		message = mapResponse.Message
+	}
+	return ctx.Status(status).JSON(APIResponse[any]{
+		Data:    mapResponse.Data,
+		Message: message,
+		Code:    status,
+		Meta:    mapResponse.Meta,
+	})
+}
+
 func JSONError(ctx *fiber.Ctx, message string, data any) error {
 	status := 500
 	return ctx.Status(status).JSON(APIResponse[any]{

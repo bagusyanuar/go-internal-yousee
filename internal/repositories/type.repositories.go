@@ -106,76 +106,66 @@ func (repository *typeStruct) Create(ctx context.Context, data *entity.Type) mod
 
 // Patch implements TypeRepository.
 func (repository *typeStruct) Patch(ctx context.Context, id string, entry map[string]interface{}) model.InterfaceResponse[*entity.Type] {
-	status := common.StatusUnProccessableEntity
+	response := model.InterfaceResponse[*entity.Type]{
+		Status: common.StatusUnProccessableEntity,
+	}
 	tx := repository.DB.WithContext(ctx)
 
-	item := new(entity.Type)
-	if err := tx.Where("id = ?", id).First(&item).Error; err != nil {
+	data := new(entity.Type)
+	if err := tx.
+		Where("id = ?", id).
+		First(&data).Error; err != nil {
+		repository.Log.Warnf("query failed : %+v", err)
 		if errors.Is(gorm.ErrRecordNotFound, err) {
-			status = common.StatusNotFound
-			return model.InterfaceResponse[*entity.Type]{
-				Status: status,
-				Error:  err,
-			}
+			response.Error = err
+			response.Status = common.StatusNotFound
+			return response
 		}
-		return model.InterfaceResponse[*entity.Type]{
-			Status: status,
-			Error:  err,
-		}
+		response.Error = err
+		return response
 	}
 
-	if err := tx.Model(&item).
+	if err := tx.Model(&data).
 		Omit(clause.Associations).
 		Where("id = ?", id).
 		Updates(&entry).Error; err != nil {
-		return model.InterfaceResponse[*entity.Type]{
-			Status: status,
-			Error:  err,
-		}
+		response.Error = err
+		return response
 	}
-	return model.InterfaceResponse[*entity.Type]{
-		Status: status,
-		Error:  nil,
-		Data:   item,
-	}
+	response.Status = common.StatusOK
+	return response
 }
 
 // Delete implements TypeRepository.
 func (repository *typeStruct) Delete(ctx context.Context, id string) model.InterfaceResponse[any] {
 	var data *entity.Type
-	status := common.StatusUnProccessableEntity
+	response := model.InterfaceResponse[any]{
+		Status: common.StatusUnProccessableEntity,
+	}
+
 	tx := repository.DB.WithContext(ctx)
 	if err := tx.
 		Where("id = ?", id).
 		First(&data).Error; err != nil {
 		if errors.Is(gorm.ErrRecordNotFound, err) {
 			repository.Log.Warnf("query failed : %+v", err)
-			status = common.StatusNotFound
-			return model.InterfaceResponse[any]{
-				Status: status,
-				Error:  common.ErrRecordNotFound,
-			}
+			response.Error = err
+			response.Status = common.StatusNotFound
+			return response
 		}
-		return model.InterfaceResponse[any]{
-			Status: status,
-			Error:  err,
-		}
+		response.Error = err
+		return response
 	}
 
 	if err := tx.
 		Omit(clause.Associations).
 		Unscoped().
 		Delete(&data).Error; err != nil {
-		return model.InterfaceResponse[any]{
-			Status: status,
-			Error:  err,
-		}
+		response.Error = err
+		return response
 	}
-	status = common.StatusOK
-	return model.InterfaceResponse[any]{
-		Status: status,
-		Error:  nil,
-	}
+	response.Status = common.StatusOK
+	return response
 }
 
 func NewTypeRepository(db *gorm.DB, log *logrus.Logger) TypeRepository {

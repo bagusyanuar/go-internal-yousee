@@ -86,9 +86,8 @@ func (c *TypeController) Create(ctx *fiber.Ctx) error {
 		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 
-	return common.JSONSuccess(ctx, common.ResponseMap{
+	return common.JSONCreated(ctx, common.ResponseMap{
 		Message: "successfully create media type",
-		Data:    response.Data,
 	})
 }
 
@@ -99,7 +98,14 @@ func (c *TypeController) Patch(ctx *fiber.Ctx) error {
 
 	if err != nil {
 		c.Log.Warnf("failed to parse request body : %+v", err)
-		return common.JSONBadRequest(ctx, err.Error(), nil)
+		return common.JSONBadRequest(ctx, "failed to parse request body", nil)
+	}
+
+	//validate form request
+	validation := c.TypeService.ValidateFormRequest(ctx.UserContext(), request)
+	if validation.Error != nil {
+		c.Log.Warnf("invalid form request : %+v", err)
+		return common.JSONBadRequest(ctx, "invalid form request", validation.Data)
 	}
 
 	if form, err := ctx.MultipartForm(); err == nil {
@@ -111,16 +117,12 @@ func (c *TypeController) Patch(ctx *fiber.Ctx) error {
 
 	response := c.TypeService.Patch(ctx.UserContext(), id, request)
 	if response.Error != nil {
-		var data any
-		if response.Status == common.StatusBadRequest {
-			data = response.Validation
-		}
-		return common.JSONFromError(ctx, response.Status, response.Error, data)
+		c.Log.Warnf("failed : %+v", response.Validation)
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{
 		Message: "successfully update media type",
-		Data:    response.Data,
 	})
 }
 

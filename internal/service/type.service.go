@@ -117,22 +117,17 @@ func (service *typeStruct) Create(ctx context.Context, request *model.TypeReques
 
 // Patch implements TypeService.
 func (service *typeStruct) Patch(ctx context.Context, id string, request *model.TypeRequest) model.InterfaceResponse[*model.TypeResponse] {
-	errValidation, msg := common.Validate(service.Validator, request)
-	if errValidation != nil {
-		return model.InterfaceResponse[*model.TypeResponse]{
-			Status:     common.StatusBadRequest,
-			Error:      errValidation,
-			Validation: msg,
-		}
+	response := model.InterfaceResponse[*model.TypeResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
 	}
 
 	//upload icon
 	icon, err := service.upload(request.Icon)
 	if err != nil {
-		return model.InterfaceResponse[*model.TypeResponse]{
-			Status: common.StatusInternalServerError,
-			Error:  err,
-		}
+		response.Status = common.StatusInternalServerError
+		response.Error = err
+		return response
 	}
 
 	name := request.Name
@@ -146,19 +141,16 @@ func (service *typeStruct) Patch(ctx context.Context, id string, request *model.
 		}
 	}
 
-	response := service.TypeRepository.Patch(ctx, id, data)
-	if response.Error != nil {
-		return model.InterfaceResponse[*model.TypeResponse]{
-			Status: response.Status,
-			Error:  response.Error,
-		}
+	repositoryResponse := service.TypeRepository.Patch(ctx, id, data)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		return response
 	}
-	item := transformer.ToType(response.Data)
-	return model.InterfaceResponse[*model.TypeResponse]{
-		Status: response.Status,
-		Error:  nil,
-		Data:   item,
-	}
+
+	response.Status = repositoryResponse.Status
+	response.Error = nil
+	return response
 }
 
 // Delete implements TypeService.
@@ -190,6 +182,8 @@ func (service *typeStruct) ValidateFormRequest(ctx context.Context, request *mod
 		response.Data = msg
 		return response
 	}
+	response.Status = common.StatusOK
+	response.Error = nil
 	return response
 }
 
