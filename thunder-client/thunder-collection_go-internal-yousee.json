@@ -1,41 +1,74 @@
 {
     "client": "Thunder Client",
     "collectionName": "go-internal-yousee",
-    "dateExported": "2024-03-19T08:29:47.586Z",
+    "dateExported": "2024-03-20T06:28:34.966Z",
     "version": "1.1",
     "folders": [
         {
-            "_id": "cb811145-343c-457c-8a0d-1b4172600eab",
-            "name": "Auth",
+            "_id": "c1d5a095-1889-4b50-9b54-91ca4f7dcf23",
+            "name": "auth",
             "containerId": "",
-            "created": "2024-03-19T07:01:55.734Z",
+            "created": "2024-03-17T13:49:12.713Z",
             "sortNum": 10000
         },
         {
-            "_id": "9a55801c-a3ff-4eb7-9daf-665354062165",
-            "name": "media-type",
+            "_id": "84542d24-78bd-45d5-a825-ba49caa6be85",
+            "name": "province",
             "containerId": "",
-            "created": "2024-03-19T07:05:17.996Z",
-            "sortNum": 20000,
+            "created": "2024-03-19T14:05:55.304Z",
+            "sortNum": 12500,
             "settings": {
                 "auth": {
                     "type": "bearer",
                     "bearer": "{{access_token}}"
                 }
             }
+        },
+        {
+            "_id": "aa1ff538-3b70-486e-a970-f0048959e535",
+            "name": "city",
+            "containerId": "",
+            "created": "2024-03-19T15:42:06.452Z",
+            "sortNum": 13750,
+            "settings": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": "{{access_token}}"
+                }
+            }
+        },
+        {
+            "_id": "e5e50da4-8ad3-4b5f-beed-783442735fb2",
+            "name": "media type",
+            "containerId": "",
+            "created": "2024-03-18T04:47:24.210Z",
+            "sortNum": 15000,
+            "settings": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": "{{access_token}}"
+                }
+            }
+        },
+        {
+            "_id": "b74168d5-395e-4601-9e3f-381457415dce",
+            "name": "item",
+            "containerId": "",
+            "created": "2024-03-17T14:17:34.560Z",
+            "sortNum": 20000
         }
     ],
     "requests": [
         {
-            "_id": "86c164f4-c604-46fe-8e52-9ad9353c74f8",
-            "colId": "75f2fa1b-aeb2-426f-af97-fbfb19ab283d",
-            "containerId": "cb811145-343c-457c-8a0d-1b4172600eab",
+            "_id": "f9c4e5c9-7aae-41d3-a915-99d3b981d826",
+            "colId": "29097ad4-876d-418a-b873-45f0cc888d66",
+            "containerId": "c1d5a095-1889-4b50-9b54-91ca4f7dcf23",
             "name": "sign-in",
-            "url": "sign-in",
+            "url": "{{url}}/sign-in",
             "method": "POST",
             "sortNum": 10000,
-            "created": "2024-03-19T07:02:04.749Z",
-            "modified": "2024-03-19T07:04:55.105Z",
+            "created": "2024-03-17T13:49:19.621Z",
+            "modified": "2024-03-17T14:36:51.639Z",
             "headers": [],
             "params": [],
             "body": {
@@ -45,6 +78,12 @@
             },
             "tests": [
                 {
+                    "type": "res-code",
+                    "custom": "",
+                    "action": "equal",
+                    "value": "200"
+                },
+                {
                     "type": "set-env-var",
                     "custom": "json.data.access_token",
                     "action": "setto",
@@ -53,43 +92,79 @@
             ]
         },
         {
-            "_id": "d5e1104c-924b-41b2-b8e2-ffa20ecc0bc3",
-            "colId": "75f2fa1b-aeb2-426f-af97-fbfb19ab283d",
-            "containerId": "9a55801c-a3ff-4eb7-9daf-665354062165",
-            "name": "find all data",
-            "url": "media-type",
+            "_id": "91d9a6ad-0eaf-4434-9e01-2b91c77098e1",
+            "colId": "29097ad4-876d-418a-b873-45f0cc888d66",
+            "containerId": "b74168d5-395e-4601-9e3f-381457415dce",
+            "name": "list",
+            "url": "{{url}}/item/test/user",
             "method": "GET",
             "sortNum": 20000,
-            "created": "2024-03-19T07:05:35.013Z",
-            "modified": "2024-03-19T07:44:14.813Z",
+            "created": "2024-03-17T14:17:39.944Z",
+            "modified": "2024-03-17T14:46:29.944Z",
             "headers": [],
             "params": [],
+            "auth": {
+                "type": "bearer",
+                "bearer": "{{access_token}}"
+            },
             "tests": []
         },
         {
-            "_id": "a0a32d68-f008-4124-8c41-481e09dd4427",
-            "colId": "75f2fa1b-aeb2-426f-af97-fbfb19ab283d",
-            "containerId": "9a55801c-a3ff-4eb7-9daf-665354062165",
+            "_id": "e0b68e75-685d-41d4-b7f6-50daab37cb4c",
+            "colId": "29097ad4-876d-418a-b873-45f0cc888d66",
+            "containerId": "e5e50da4-8ad3-4b5f-beed-783442735fb2",
+            "name": "find all",
+            "url": "media-type?name&page=1&per_page=10",
+            "method": "GET",
+            "sortNum": 30000,
+            "created": "2024-03-18T04:48:00.792Z",
+            "modified": "2024-03-19T13:39:32.661Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "name",
+                    "value": "",
+                    "isPath": false
+                },
+                {
+                    "name": "page",
+                    "value": "1",
+                    "isPath": false
+                },
+                {
+                    "name": "per_page",
+                    "value": "10",
+                    "isPath": false
+                }
+            ],
+            "reqType": "get",
+            "tests": []
+        },
+        {
+            "_id": "c78307c6-0ae8-4a80-a758-72d685e61a7c",
+            "colId": "29097ad4-876d-418a-b873-45f0cc888d66",
+            "containerId": "e5e50da4-8ad3-4b5f-beed-783442735fb2",
             "name": "find by id",
             "url": "media-type/1",
             "method": "GET",
-            "sortNum": 30000,
-            "created": "2024-03-19T07:43:30.537Z",
-            "modified": "2024-03-19T07:44:46.088Z",
+            "sortNum": 40000,
+            "created": "2024-03-18T05:03:35.492Z",
+            "modified": "2024-03-19T13:39:59.768Z",
             "headers": [],
             "params": [],
+            "reqType": "get",
             "tests": []
         },
         {
-            "_id": "597710bc-53ea-408a-b062-65a3177746b0",
-            "colId": "75f2fa1b-aeb2-426f-af97-fbfb19ab283d",
-            "containerId": "9a55801c-a3ff-4eb7-9daf-665354062165",
+            "_id": "a304df6e-53e2-4d54-aadb-21490a282e06",
+            "colId": "29097ad4-876d-418a-b873-45f0cc888d66",
+            "containerId": "e5e50da4-8ad3-4b5f-beed-783442735fb2",
             "name": "create",
             "url": "media-type",
             "method": "POST",
-            "sortNum": 40000,
-            "created": "2024-03-19T08:01:07.697Z",
-            "modified": "2024-03-19T08:25:41.980Z",
+            "sortNum": 50000,
+            "created": "2024-03-18T14:27:01.406Z",
+            "modified": "2024-03-20T06:26:41.702Z",
             "headers": [],
             "params": [],
             "body": {
@@ -100,9 +175,148 @@
                         "name": "name",
                         "value": ""
                     }
-                ],
-                "files": []
+                ]
             },
+            "reqType": "post",
+            "auth": {
+                "type": "bearer",
+                "bearer": "{{access_token}}"
+            },
+            "tests": []
+        },
+        {
+            "_id": "e303d198-fd46-458c-acb1-1d5c996d6bd4",
+            "colId": "29097ad4-876d-418a-b873-45f0cc888d66",
+            "containerId": "e5e50da4-8ad3-4b5f-beed-783442735fb2",
+            "name": "update",
+            "url": "media-type/10",
+            "method": "PUT",
+            "sortNum": 55000,
+            "created": "2024-03-19T13:41:17.338Z",
+            "modified": "2024-03-19T13:42:51.026Z",
+            "headers": [],
+            "params": [],
+            "body": {
+                "type": "formdata",
+                "raw": "",
+                "form": [
+                    {
+                        "name": "name",
+                        "value": "Bando Jalans"
+                    }
+                ]
+            },
+            "tests": []
+        },
+        {
+            "_id": "28e4d3e9-6b09-442f-8a03-2c89bdb6e074",
+            "colId": "29097ad4-876d-418a-b873-45f0cc888d66",
+            "containerId": "e5e50da4-8ad3-4b5f-beed-783442735fb2",
+            "name": "delete",
+            "url": "media-type/3",
+            "method": "DELETE",
+            "sortNum": 60000,
+            "created": "2024-03-19T13:26:36.779Z",
+            "modified": "2024-03-19T13:30:25.018Z",
+            "headers": [],
+            "params": [],
+            "tests": []
+        },
+        {
+            "_id": "51274f3d-9ead-42d7-88c5-31a87b321598",
+            "colId": "29097ad4-876d-418a-b873-45f0cc888d66",
+            "containerId": "84542d24-78bd-45d5-a825-ba49caa6be85",
+            "name": "find all",
+            "url": "province?name&page=1&per_page=10",
+            "method": "GET",
+            "sortNum": 90000,
+            "created": "2024-03-19T14:06:26.290Z",
+            "modified": "2024-03-20T05:17:34.941Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "name",
+                    "value": "",
+                    "isPath": false
+                },
+                {
+                    "name": "page",
+                    "value": "1",
+                    "isPath": false
+                },
+                {
+                    "name": "per_page",
+                    "value": "10",
+                    "isPath": false
+                }
+            ],
+            "reqType": "get",
+            "tests": []
+        },
+        {
+            "_id": "751647c7-028f-406c-abd8-015ed749c083",
+            "colId": "29097ad4-876d-418a-b873-45f0cc888d66",
+            "containerId": "84542d24-78bd-45d5-a825-ba49caa6be85",
+            "name": "find by id",
+            "url": "province/31",
+            "method": "GET",
+            "sortNum": 100000,
+            "created": "2024-03-19T14:14:43.879Z",
+            "modified": "2024-03-20T05:17:56.169Z",
+            "headers": [],
+            "params": [],
+            "reqType": "get",
+            "tests": []
+        },
+        {
+            "_id": "0b43bc94-c9b8-40ef-8018-2c7f39e4f441",
+            "colId": "29097ad4-876d-418a-b873-45f0cc888d66",
+            "containerId": "aa1ff538-3b70-486e-a970-f0048959e535",
+            "name": "find all",
+            "url": "city?page=1&per_page=20",
+            "method": "GET",
+            "sortNum": 110000,
+            "created": "2024-03-19T15:42:31.651Z",
+            "modified": "2024-03-19T16:03:20.697Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "name",
+                    "value": "surasasdqwe",
+                    "isDisabled": true,
+                    "isPath": false
+                },
+                {
+                    "name": "province",
+                    "value": "33",
+                    "isDisabled": true,
+                    "isPath": false
+                },
+                {
+                    "name": "page",
+                    "value": "1",
+                    "isPath": false
+                },
+                {
+                    "name": "per_page",
+                    "value": "20",
+                    "isPath": false
+                }
+            ],
+            "tests": []
+        },
+        {
+            "_id": "00195067-4988-479f-97ec-c443b77aa861",
+            "colId": "29097ad4-876d-418a-b873-45f0cc888d66",
+            "containerId": "aa1ff538-3b70-486e-a970-f0048959e535",
+            "name": "find by id",
+            "url": "city/1101",
+            "method": "GET",
+            "sortNum": 120000,
+            "created": "2024-03-20T05:06:06.578Z",
+            "modified": "2024-03-20T05:09:03.091Z",
+            "headers": [],
+            "params": [],
             "tests": []
         }
     ],
@@ -110,6 +324,6 @@
         "options": {
             "baseUrl": "http://localhost:8000/api/"
         },
-        "envId": "e4d52fe3-b55a-4cba-9fb2-c51657d6bbdd"
+        "envId": "b55a761d-a229-482f-ad25-ff90de0cc8ff"
     }
 }
