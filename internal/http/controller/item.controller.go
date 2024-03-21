@@ -8,7 +8,6 @@ import (
 	"github.com/bagusyanuar/go-internal-yousee/internal/service"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type (
@@ -26,12 +25,20 @@ func NewItemController(itemService service.ItemService, log *logrus.Logger) *Ite
 }
 
 func (c *ItemController) FindAll(ctx *fiber.Ctx) error {
-	param := ctx.Query("name")
+	param := ctx.Query("param")
+	cityID := ctx.Query("city_id")
+	typeID := ctx.Query("type_id")
+	vendorID := ctx.Query("vendor_id")
 	page := ctx.QueryInt("page")
 	perPage := ctx.QueryInt("per_page")
 
-	queryString := model.QueryString[string]{
-		Query: param,
+	queryString := model.QueryString[model.ItemQueryString]{
+		Query: model.ItemQueryString{
+			Param:    param,
+			CityID:   cityID,
+			TypeID:   typeID,
+			VendorID: vendorID,
+		},
 		QueryPagination: model.PaginationQuery{
 			Page:    page,
 			PerPage: perPage,
@@ -53,16 +60,13 @@ func (c *ItemController) FindAll(ctx *fiber.Ctx) error {
 func (c *ItemController) FindByID(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 
-	res, err := c.ItemService.FindByID(ctx.UserContext(), id)
-	if err != nil {
-		if errors.Is(gorm.ErrRecordNotFound, err) {
-			return common.JSONNotFound(ctx, err.Error(), nil)
-		}
-		return common.JSONError(ctx, err.Error(), nil)
+	response := c.ItemService.FindByID(ctx.UserContext(), id)
+	if response.Error != nil {
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 	return common.JSONSuccess(ctx, common.ResponseMap{
 		Message: "successfully show item",
-		Data:    res,
+		Data:    response.Data,
 	})
 }
 

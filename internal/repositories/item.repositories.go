@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 
 	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/entity"
@@ -14,8 +15,8 @@ import (
 
 type (
 	ItemRepository interface {
-		FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]entity.Item]
-		FindByID(ctx context.Context, id string) (*entity.Item, error)
+		FindAll(ctx context.Context, queryString model.QueryString[model.ItemQueryString]) model.InterfaceResponse[[]entity.Item]
+		FindByID(ctx context.Context, id string) model.InterfaceResponse[*entity.Item]
 		Create(ctx context.Context, entity *entity.Item) error
 		// Patch(ctx context.Context, id string, data map[string]interface{}) error
 		// Delete(ctx context.Context, id string) error
@@ -28,8 +29,12 @@ type (
 )
 
 // FindAll implements ItemRepository.
-func (repository *itemStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]entity.Item] {
+func (repository *itemStruct) FindAll(ctx context.Context, queryString model.QueryString[model.ItemQueryString]) model.InterfaceResponse[[]entity.Item] {
 	var data []entity.Item
+	queryParam := queryString.Query.Param
+	queryType := queryString.Query.TypeID
+	queryCity := queryString.Query.CityID
+	queryVendor := queryString.Query.VendorID
 	metaPagination := new(model.MetaPagination)
 	paginate := &common.Pagination{
 		Limit: queryString.QueryPagination.PerPage,
@@ -39,17 +44,32 @@ func (repository *itemStruct) FindAll(ctx context.Context, queryString model.Que
 		Status:         common.StatusUnProccessableEntity,
 		MetaPagination: metaPagination,
 	}
-	tx := repository.DB.WithContext(ctx)
+	tx := repository.DB.WithContext(ctx).
+		Preload("Type").
+		Preload("City").
+		Preload("Vendor")
 
-	if queryString.Query != "" {
-		q := "%" + queryString.Query + "%"
-		tx = tx.Where("name LIKE ?", q)
+	if queryParam != "" {
+		q := "%" + queryParam + "%"
+		tx = tx.
+			Where("name LIKE ?", q).
+			Or("address LIKE ?", q).
+			Or("location LIKE ?", q)
+	}
+
+	if queryCity != "" {
+		tx = tx.Where("city_id = ?", queryCity)
+	}
+
+	if queryType != "" {
+		tx = tx.Where("type_id = ?", queryType)
+	}
+
+	if queryVendor != "" {
+		tx = tx.Where("vendor_id = ?", queryVendor)
 	}
 
 	if err := tx.
-		Preload("Type").
-		Preload("City").
-		Preload("Vendor").
 		Scopes(common.Paginate(data, paginate, tx)).
 		Find(&data).Error; err != nil {
 		repository.Log.Warnf("query failed : %+v", err)
@@ -64,18 +84,31 @@ func (repository *itemStruct) FindAll(ctx context.Context, queryString model.Que
 }
 
 // FindByID implements ItemRepository.
-func (repository *itemStruct) FindByID(ctx context.Context, id string) (*entity.Item, error) {
-	var entity *entity.Item
+func (repository *itemStruct) FindByID(ctx context.Context, id string) model.InterfaceResponse[*entity.Item] {
+	var data *entity.Item
+	response := model.InterfaceResponse[*entity.Item]{
+		Status: common.StatusUnProccessableEntity,
+	}
+
 	tx := repository.DB.WithContext(ctx)
 	if err := tx.
 		Preload("Type").
 		Preload("City").
 		Preload("Vendor").
 		Where("id = ?", id).
-		First(&entity).Error; err != nil {
-		return entity, err
+		First(&data).Error; err != nil {
+		repository.Log.Warnf("query failed : %+v", err)
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			response.Status = common.StatusNotFound
+			response.Error = common.ErrRecordNotFound
+			return response
+		}
+		response.Error = err
+		return response
 	}
-	return entity, nil
+	response.Status = common.StatusOK
+	response.Data = data
+	return response
 }
 
 // Create implements ItemRepository.

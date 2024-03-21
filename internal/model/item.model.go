@@ -59,3 +59,10 @@ type ItemRequest struct {
 	Height    float64 `json:"height" validate:"required"`
 	Position  string  `json:"position" validate:"required"`
 }
+
+type ItemQueryString struct {
+	Param    string `json:"param"`
+	TypeID   string `json:"type_id"`
+	CityID   string `json:"city_id"`
+	VendorID string `json:"vendor_id"`
+}

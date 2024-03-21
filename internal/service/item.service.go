@@ -14,8 +14,8 @@ import (
 
 type (
 	ItemService interface {
-		FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]model.ItemResponse]
-		FindByID(ctx context.Context, id string) (*model.ItemResponse, error)
+		FindAll(ctx context.Context, queryString model.QueryString[model.ItemQueryString]) model.InterfaceResponse[[]model.ItemResponse]
+		FindByID(ctx context.Context, id string) model.InterfaceResponse[*model.ItemResponse]
 		Create(ctx context.Context, request *model.ItemRequest) (any, error)
 	}
 
@@ -27,7 +27,7 @@ type (
 )
 
 // FindAll implements ItemService.
-func (service *itemStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]model.ItemResponse] {
+func (service *itemStruct) FindAll(ctx context.Context, queryString model.QueryString[model.ItemQueryString]) model.InterfaceResponse[[]model.ItemResponse] {
 	response := model.InterfaceResponse[[]model.ItemResponse]{
 		Status: common.StatusInternalServerError,
 		Error:  common.ErrUnknown,
@@ -49,12 +49,23 @@ func (service *itemStruct) FindAll(ctx context.Context, queryString model.QueryS
 }
 
 // FindByID implements ItemService.
-func (service *itemStruct) FindByID(ctx context.Context, id string) (*model.ItemResponse, error) {
-	entity, err := service.ItemRepository.FindByID(ctx, id)
-	if err != nil {
-		return nil, err
+func (service *itemStruct) FindByID(ctx context.Context, id string) model.InterfaceResponse[*model.ItemResponse] {
+	response := model.InterfaceResponse[*model.ItemResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
 	}
-	return transformer.ToItem(entity), nil
+
+	repositoryResponse := service.ItemRepository.FindByID(ctx, id)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		return response
+	}
+	data := transformer.ToItem(repositoryResponse.Data)
+	response.Status = repositoryResponse.Status
+	response.Data = data
+	response.Error = nil
+	return response
 }
 
 // Create implements ItemService.
