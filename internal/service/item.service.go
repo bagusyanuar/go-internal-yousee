@@ -16,7 +16,9 @@ type (
 	ItemService interface {
 		FindAll(ctx context.Context, queryString model.QueryString[model.ItemQueryString]) model.InterfaceResponse[[]model.ItemResponse]
 		FindByID(ctx context.Context, id string) model.InterfaceResponse[*model.ItemResponse]
-		Create(ctx context.Context, request *model.ItemRequest) (any, error)
+		Create(ctx context.Context, request *model.ItemRequest) model.InterfaceResponse[*model.ItemResponse]
+		Patch(ctx context.Context, id string, request *model.ItemRequest) model.InterfaceResponse[*model.ItemResponse]
+		ValidateFormRequest(ctx context.Context, request *model.ItemRequest) model.InterfaceResponse[any]
 	}
 
 	itemStruct struct {
@@ -69,11 +71,10 @@ func (service *itemStruct) FindByID(ctx context.Context, id string) model.Interf
 }
 
 // Create implements ItemService.
-func (service *itemStruct) Create(ctx context.Context, request *model.ItemRequest) (any, error) {
-	//validate form request
-	errValidation, msg := common.Validate(service.Validator, request)
-	if errValidation != nil {
-		return msg, common.ErrBadRequest
+func (service *itemStruct) Create(ctx context.Context, request *model.ItemRequest) model.InterfaceResponse[*model.ItemResponse] {
+	response := model.InterfaceResponse[*model.ItemResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
 	}
 
 	typeID := request.TypeID
@@ -88,7 +89,7 @@ func (service *itemStruct) Create(ctx context.Context, request *model.ItemReques
 	height := request.Height
 	position := request.Position
 
-	entity := &entity.Item{
+	entry := &entity.Item{
 		TypeID:    typeID,
 		CityID:    cityID,
 		VendorID:  vendorID,
@@ -101,11 +102,78 @@ func (service *itemStruct) Create(ctx context.Context, request *model.ItemReques
 		Height:    height,
 		Position:  position,
 	}
-	err := service.ItemRepository.Create(ctx, entity)
-	if err != nil {
-		return nil, err
+	repositoryResponse := service.ItemRepository.Create(ctx, entry)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		return response
 	}
-	return nil, nil
+	response.Status = repositoryResponse.Status
+	response.Error = nil
+	return response
+}
+
+// Patch implements ItemService.
+func (service *itemStruct) Patch(ctx context.Context, id string, request *model.ItemRequest) model.InterfaceResponse[*model.ItemResponse] {
+	response := model.InterfaceResponse[*model.ItemResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
+	}
+
+	typeID := request.TypeID
+	cityID := request.CityID
+	vendorID := request.VendorID
+	name := request.Name
+	address := request.Address
+	latitude := request.Latitude
+	longitude := request.Longitude
+	url := request.URL
+	width := request.Width
+	height := request.Height
+	position := request.Position
+
+	entry := map[string]interface{}{
+		"type_id":   typeID,
+		"city_id":   cityID,
+		"vendor_id": vendorID,
+		"name":      name,
+		"address":   address,
+		"latitude":  latitude,
+		"longitude": longitude,
+		"url":       url,
+		"width":     width,
+		"height":    height,
+		"position":  position,
+	}
+
+	repositoryResponse := service.ItemRepository.Patch(ctx, id, entry)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		return response
+	}
+	response.Status = repositoryResponse.Status
+	response.Error = nil
+	return response
+}
+
+// ValidateFormRequest implements ItemService.
+func (service *itemStruct) ValidateFormRequest(ctx context.Context, request *model.ItemRequest) model.InterfaceResponse[any] {
+	response := model.InterfaceResponse[any]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrValidateRequest,
+	}
+
+	err, msg := common.Validate(service.Validator, request)
+	if err != nil {
+		response.Status = common.StatusBadRequest
+		response.Error = err
+		response.Data = msg
+		return response
+	}
+	response.Status = common.StatusOK
+	response.Error = nil
+	return response
 }
 
 func NewItemService(

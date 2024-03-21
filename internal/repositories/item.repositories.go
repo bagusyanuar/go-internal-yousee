@@ -17,8 +17,8 @@ type (
 	ItemRepository interface {
 		FindAll(ctx context.Context, queryString model.QueryString[model.ItemQueryString]) model.InterfaceResponse[[]entity.Item]
 		FindByID(ctx context.Context, id string) model.InterfaceResponse[*entity.Item]
-		Create(ctx context.Context, entity *entity.Item) error
-		// Patch(ctx context.Context, id string, data map[string]interface{}) error
+		Create(ctx context.Context, entry *entity.Item) model.InterfaceResponse[*entity.Item]
+		Patch(ctx context.Context, id string, entry map[string]interface{}) model.InterfaceResponse[*entity.Item]
 		// Delete(ctx context.Context, id string) error
 	}
 
@@ -112,12 +112,51 @@ func (repository *itemStruct) FindByID(ctx context.Context, id string) model.Int
 }
 
 // Create implements ItemRepository.
-func (repository *itemStruct) Create(ctx context.Context, entity *entity.Item) error {
-	tx := repository.DB.WithContext(ctx)
-	if err := tx.Omit(clause.Associations).Create(entity).Error; err != nil {
-		return err
+func (repository *itemStruct) Create(ctx context.Context, entry *entity.Item) model.InterfaceResponse[*entity.Item] {
+	response := model.InterfaceResponse[*entity.Item]{
+		Status: common.StatusUnProccessableEntity,
 	}
-	return nil
+
+	tx := repository.DB.WithContext(ctx)
+	if err := tx.Omit(clause.Associations).Create(&entry).Error; err != nil {
+		repository.Log.Warnf("query failed : %+v", err)
+		response.Error = err
+		return response
+	}
+	response.Status = common.StatusCreated
+	return response
+}
+
+// Patch implements ItemRepository.
+func (repository *itemStruct) Patch(ctx context.Context, id string, entry map[string]interface{}) model.InterfaceResponse[*entity.Item] {
+	response := model.InterfaceResponse[*entity.Item]{
+		Status: common.StatusUnProccessableEntity,
+	}
+	tx := repository.DB.WithContext(ctx)
+
+	data := new(entity.Item)
+	if err := tx.
+		Where("id = ?", id).
+		First(&data).Error; err != nil {
+		repository.Log.Warnf("query failed : %+v", err)
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			response.Error = err
+			response.Status = common.StatusNotFound
+			return response
+		}
+		response.Error = err
+		return response
+	}
+
+	if err := tx.Model(&data).
+		Omit(clause.Associations).
+		Where("id = ?", id).
+		Updates(&entry).Error; err != nil {
+		response.Error = err
+		return response
+	}
+	response.Status = common.StatusOK
+	return response
 }
 
 func NewItemRepository(db *gorm.DB, log *logrus.Logger) ItemRepository {

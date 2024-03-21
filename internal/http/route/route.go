@@ -61,6 +61,6 @@ func (c *RouteConfig) ProtectedRoute(route fiber.Router, authMiddleware fiber.Ha
 
 	itemGrop := route.Group("/item", authMiddleware)
 	itemGrop.Get("/", c.ItemController.FindAll)
-	itemGrop.Get("/", c.ItemController.Create)
+	itemGrop.Post("/", c.ItemController.Create)
 	itemGrop.Get("/:id", c.ItemController.FindByID)
 }

@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"errors"
-
 	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/model"
 	"github.com/bagusyanuar/go-internal-yousee/internal/service"
@@ -76,18 +74,22 @@ func (c *ItemController) Create(ctx *fiber.Ctx) error {
 
 	if err != nil {
 		c.Log.Warnf("failed to parse request body : %+v", err)
-		return common.JSONBadRequest(ctx, err.Error(), nil)
+		return common.JSONBadRequest(ctx, "failed to parse request body", nil)
 	}
 
-	validationMsg, err := c.ItemService.Create(ctx.UserContext(), request)
-	if err != nil {
-		if errors.Is(common.ErrBadRequest, err) {
-			return common.JSONBadRequest(ctx, "bad request", validationMsg)
-		}
-		return common.JSONError(ctx, err.Error(), nil)
+	//validate form request
+	validation := c.ItemService.ValidateFormRequest(ctx.UserContext(), request)
+	if validation.Error != nil {
+		return common.JSONBadRequest(ctx, "invalid form request", validation.Data)
 	}
 
-	return common.JSONSuccess(ctx, common.ResponseMap{
-		Message: "successfully create new item",
+	response := c.ItemService.Create(ctx.UserContext(), request)
+	if response.Error != nil {
+		c.Log.Warnf("failed : %+v", response.Validation)
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
+	}
+
+	return common.JSONCreated(ctx, common.ResponseMap{
+		Message: "successfully create item",
 	})
 }
