@@ -14,7 +14,7 @@ import (
 
 type (
 	ItemRepository interface {
-		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Item], error)
+		FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]entity.Item]
 		FindByID(ctx context.Context, id string) (*entity.Item, error)
 		Create(ctx context.Context, entity *entity.Item) error
 		// Patch(ctx context.Context, id string, data map[string]interface{}) error
@@ -28,9 +28,17 @@ type (
 )
 
 // FindAll implements ItemRepository.
-func (repository *itemStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]entity.Item], error) {
-	var items []entity.Item
+func (repository *itemStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]entity.Item] {
+	var data []entity.Item
 	metaPagination := new(model.MetaPagination)
+	paginate := &common.Pagination{
+		Limit: queryString.QueryPagination.PerPage,
+		Page:  queryString.QueryPagination.Page,
+	}
+	response := model.InterfaceResponse[[]entity.Item]{
+		Status:         common.StatusUnProccessableEntity,
+		MetaPagination: metaPagination,
+	}
 	tx := repository.DB.WithContext(ctx)
 
 	if queryString.Query != "" {
@@ -38,21 +46,21 @@ func (repository *itemStruct) FindAll(ctx context.Context, queryString model.Que
 		tx = tx.Where("name LIKE ?", q)
 	}
 
-	paginate := &common.Pagination{
-		Limit: queryString.QueryPagination.PerPage,
-		Page:  queryString.QueryPagination.Page,
-	}
 	if err := tx.
 		Preload("Type").
 		Preload("City").
 		Preload("Vendor").
-		Scopes(common.Paginate(items, paginate, tx)).
-		Find(&items).Error; err != nil {
-		return model.Response[[]entity.Item]{}, err
+		Scopes(common.Paginate(data, paginate, tx)).
+		Find(&data).Error; err != nil {
+		repository.Log.Warnf("query failed : %+v", err)
+		response.Error = err
+		return response
 	}
 
-	metaPagination = transformer.ToMetaPagination(paginate)
-	return model.Response[[]entity.Item]{Data: items, Meta: metaPagination}, nil
+	response.Status = common.StatusOK
+	response.Data = data
+	response.MetaPagination = transformer.ToMetaPagination(paginate)
+	return response
 }
 
 // FindByID implements ItemRepository.

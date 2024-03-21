@@ -33,7 +33,7 @@ func ToItem(item *entity.Item) *model.ItemResponse {
 }
 
 func ToItems(entities []entity.Item) []model.ItemResponse {
-	var items []model.ItemResponse
+	items := make([]model.ItemResponse, 0)
 	for _, entity := range entities {
 		t := *ToItem(&entity)
 		items = append(items, t)

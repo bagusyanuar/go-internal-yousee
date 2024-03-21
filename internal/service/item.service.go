@@ -14,7 +14,7 @@ import (
 
 type (
 	ItemService interface {
-		FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.ItemResponse], error)
+		FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]model.ItemResponse]
 		FindByID(ctx context.Context, id string) (*model.ItemResponse, error)
 		Create(ctx context.Context, request *model.ItemRequest) (any, error)
 	}
@@ -27,14 +27,25 @@ type (
 )
 
 // FindAll implements ItemService.
-func (service *itemStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) (model.Response[[]model.ItemResponse], error) {
-	var items []model.ItemResponse
-	response, err := service.ItemRepository.FindAll(ctx, queryString)
-	if err != nil {
-		return model.Response[[]model.ItemResponse]{}, err
+func (service *itemStruct) FindAll(ctx context.Context, queryString model.QueryString[string]) model.InterfaceResponse[[]model.ItemResponse] {
+	response := model.InterfaceResponse[[]model.ItemResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
 	}
-	items = transformer.ToItems(response.Data)
-	return model.Response[[]model.ItemResponse]{Data: items, Meta: response.Meta}, nil
+	repositoryResponse := service.ItemRepository.FindAll(ctx, queryString)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		response.MetaPagination = repositoryResponse.MetaPagination
+		return response
+	}
+
+	data := transformer.ToItems(repositoryResponse.Data)
+	response.Status = repositoryResponse.Status
+	response.MetaPagination = repositoryResponse.MetaPagination
+	response.Data = data
+	response.Error = nil
+	return response
 }
 
 // FindByID implements ItemService.

@@ -30,24 +30,23 @@ func (c *ItemController) FindAll(ctx *fiber.Ctx) error {
 	page := ctx.QueryInt("page")
 	perPage := ctx.QueryInt("per_page")
 
-	pagination := model.PaginationQuery{
-		Page:    page,
-		PerPage: perPage,
+	queryString := model.QueryString[string]{
+		Query: param,
+		QueryPagination: model.PaginationQuery{
+			Page:    page,
+			PerPage: perPage,
+		},
 	}
 
-	queryString := model.QueryString[string]{
-		Query:           param,
-		QueryPagination: pagination,
-	}
-	response, err := c.ItemService.FindAll(ctx.UserContext(), queryString)
-	if err != nil {
-		return common.JSONError(ctx, err.Error(), nil)
+	response := c.ItemService.FindAll(ctx.UserContext(), queryString)
+	if response.Error != nil {
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
 	}
 
 	return common.JSONSuccess(ctx, common.ResponseMap{
-		Message: "successfully show items",
+		Message: "successfully show vendors",
 		Data:    response.Data,
-		Meta:    response.Meta,
+		Meta:    response.MetaPagination,
 	})
 }
 
