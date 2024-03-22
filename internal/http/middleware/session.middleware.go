@@ -19,16 +19,15 @@ func NewSessionMiddleware(cookieSession *session.Store) SessionMiddleware {
 
 func (c *SessionMiddleware) Verify() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		session, err := c.CookieSession.Get(ctx)
-		if err != nil {
+		val := ctx.Cookies("authentication-session")
+		fmt.Printf("session value : %+v", val)
+		if val != "abc" {
 			return ctx.Status(401).JSON(&fiber.Map{
 				"code":    401,
-				"message": err.Error(),
+				"message": "cookie value did not match",
 				"data":    nil,
 			})
 		}
-		val := session.Get("authentication-session")
-		fmt.Printf("session value : %+v", val)
 		return ctx.Next()
 	}
 }

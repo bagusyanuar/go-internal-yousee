@@ -4,6 +4,7 @@ import (
 	"github.com/bagusyanuar/go-internal-yousee/internal/http/controller"
 	"github.com/bagusyanuar/go-internal-yousee/internal/http/middleware"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/encryptcookie"
 )
 
 type RouteConfig struct {
@@ -23,6 +24,9 @@ func (c *RouteConfig) Setup() {
 
 	// apiRoute := c.App.Group("/api")
 	apiRoute := c.App.Group("/api")
+	apiRoute.Use(encryptcookie.New(encryptcookie.Config{
+		Key: "ZRVd9PGbVfxWsTW96v1UARfNaJVewiDZ",
+	}))
 	c.PublicRoute(apiRoute)
 
 	sessionMiddleware := c.SessionMiddleware.Verify()

@@ -44,22 +44,28 @@ func (c *AuthController) SignIn(ctx *fiber.Ctx) error {
 		})
 	}
 
-	session, err := c.CookieSession.Get(ctx)
-	if err != nil {
-		return ctx.Status(500).JSON(&fiber.Map{
-			"code":    500,
-			"message": err.Error(),
-			"data":    nil,
-		})
-	}
-	session.Set("authentication-session", "abcdefg")
-	if err := session.Save(); err != nil {
-		return ctx.Status(500).JSON(&fiber.Map{
-			"code":    500,
-			"message": err.Error(),
-			"data":    nil,
-		})
-	}
+	ctx.Cookie(&fiber.Cookie{
+		Name:   "authentication-session",
+		Value:  "auth-cookie",
+		Path:   "/",
+		MaxAge: 10,
+	})
+	// session, err := c.CookieSession.Get(ctx)
+	// if err != nil {
+	// 	return ctx.Status(500).JSON(&fiber.Map{
+	// 		"code":    500,
+	// 		"message": err.Error(),
+	// 		"data":    nil,
+	// 	})
+	// }
+	// session.Set("authentication-session", "abcdefg")
+	// if err := session.Save(); err != nil {
+	// 	return ctx.Status(500).JSON(&fiber.Map{
+	// 		"code":    500,
+	// 		"message": err.Error(),
+	// 		"data":    nil,
+	// 	})
+	// }
 	return ctx.Status(200).JSON(common.APIResponse[*model.AuthResponse]{
 		Data:    res,
 		Message: "successfully login",
