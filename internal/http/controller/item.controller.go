@@ -93,3 +93,30 @@ func (c *ItemController) Create(ctx *fiber.Ctx) error {
 		Message: "successfully create item",
 	})
 }
+
+func (c *ItemController) Patch(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+	request := new(model.ItemRequest)
+	err := ctx.BodyParser(request)
+
+	if err != nil {
+		c.Log.Warnf("failed to parse request body : %+v", err)
+		return common.JSONBadRequest(ctx, "failed to parse request body", nil)
+	}
+
+	//validate form request
+	validation := c.ItemService.ValidateFormRequest(ctx.UserContext(), request)
+	if validation.Error != nil {
+		return common.JSONBadRequest(ctx, "invalid form request", validation.Data)
+	}
+
+	response := c.ItemService.Patch(ctx.UserContext(), id, request)
+	if response.Error != nil {
+		c.Log.Warnf("failed : %+v", response.Error.Error())
+		return common.JSONFromError(ctx, response.Status, response.Error, nil)
+	}
+
+	return common.JSONSuccess(ctx, common.ResponseMap{
+		Message: "successfully update item",
+	})
+}

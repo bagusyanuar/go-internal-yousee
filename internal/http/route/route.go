@@ -9,6 +9,7 @@ import (
 type RouteConfig struct {
 	App                *fiber.App
 	JWTMiddleware      *middleware.JWTMiddleware
+	SessionMiddleware  *middleware.SessionMiddleware
 	HomeController     *controller.HomeController
 	AuthController     *controller.AuthController
 	TypeController     *controller.TypeController
@@ -24,8 +25,9 @@ func (c *RouteConfig) Setup() {
 	apiRoute := c.App.Group("/api")
 	c.PublicRoute(apiRoute)
 
+	sessionMiddleware := c.SessionMiddleware.Verify()
 	authMiddleware := c.JWTMiddleware.Verify()
-	c.ProtectedRoute(apiRoute, authMiddleware)
+	c.ProtectedRoute(apiRoute, sessionMiddleware, authMiddleware)
 }
 
 func (c *RouteConfig) PublicRoute(route fiber.Router) {
@@ -34,10 +36,10 @@ func (c *RouteConfig) PublicRoute(route fiber.Router) {
 
 }
 
-func (c *RouteConfig) ProtectedRoute(route fiber.Router, authMiddleware fiber.Handler) {
+func (c *RouteConfig) ProtectedRoute(route fiber.Router, sessionMiddleware, authMiddleware fiber.Handler) {
 
 	//media type routes
-	typeGroup := route.Group("/media-type", authMiddleware)
+	typeGroup := route.Group("/media-type", sessionMiddleware, authMiddleware)
 	typeGroup.Get("/", c.TypeController.FindAll)
 	typeGroup.Post("/", c.TypeController.Create)
 	typeGroup.Get("/:id", c.TypeController.FindByID)
@@ -63,4 +65,5 @@ func (c *RouteConfig) ProtectedRoute(route fiber.Router, authMiddleware fiber.Ha
 	itemGrop.Get("/", c.ItemController.FindAll)
 	itemGrop.Post("/", c.ItemController.Create)
 	itemGrop.Get("/:id", c.ItemController.FindByID)
+	itemGrop.Put("/:id", c.ItemController.Patch)
 }
