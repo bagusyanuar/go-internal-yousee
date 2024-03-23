@@ -7,16 +7,17 @@ import (
 )
 
 type RouteConfig struct {
-	App                *fiber.App
-	JWTMiddleware      *middleware.JWTMiddleware
-	SessionMiddleware  *middleware.SessionMiddleware
-	HomeController     *controller.HomeController
-	AuthController     *controller.AuthController
-	TypeController     *controller.TypeController
-	ProvinceController *controller.ProvinceController
-	CityController     *controller.CityController
-	VendorController   *controller.VendorController
-	ItemController     *controller.ItemController
+	App                 *fiber.App
+	JWTMiddleware       *middleware.JWTMiddleware
+	SessionMiddleware   *middleware.SessionMiddleware
+	HomeController      *controller.HomeController
+	AuthController      *controller.AuthController
+	DashboardController *controller.DashboardController
+	TypeController      *controller.TypeController
+	ProvinceController  *controller.ProvinceController
+	CityController      *controller.CityController
+	VendorController    *controller.VendorController
+	ItemController      *controller.ItemController
 }
 
 func (c *RouteConfig) Setup() {
@@ -38,6 +39,9 @@ func (c *RouteConfig) PublicRoute(route fiber.Router) {
 }
 
 func (c *RouteConfig) ProtectedRoute(route fiber.Router, sessionMiddleware, authMiddleware fiber.Handler) {
+
+	dashboardGroup := route.Group("/dashboard", sessionMiddleware, authMiddleware)
+	dashboardGroup.Get("/statistic-info", c.DashboardController.GetDashboardStatisticInfo)
 
 	//media type routes
 	typeGroup := route.Group("/media-type", sessionMiddleware, authMiddleware)

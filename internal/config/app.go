@@ -29,6 +29,7 @@ func Bootstrap(config *BootstrapConfig) {
 	sessionMiddleware := middleware.NewSessionMiddleware(config.CookieAuth)
 
 	authRepository := repositories.NewAuthRepository(config.DB, config.Log)
+	dashboardRepository := repositories.NewDashboardRepository(config.DB, config.Log)
 	typeRepository := repositories.NewTypeRepository(config.DB, config.Log)
 	provinceRepository := repositories.NewProvinceRepository(config.DB, config.Log)
 	cityRepository := repositories.NewCityRepository(config.DB, config.Log)
@@ -36,6 +37,7 @@ func Bootstrap(config *BootstrapConfig) {
 	itemRepository := repositories.NewItemRepository(config.DB, config.Log)
 
 	authService := service.NewAuthService(authRepository, config.JWT, config.Validator)
+	dashboardService := service.NewDashboardService(dashboardRepository, config.Log)
 	typeService := service.NewItemTypeService(typeRepository, config.Log, config.Validator)
 	provinceService := service.NewProvinceService(provinceRepository, config.Log)
 	cityService := service.NewCityService(cityRepository, config.Log)
@@ -44,6 +46,7 @@ func Bootstrap(config *BootstrapConfig) {
 
 	homeController := controller.NewHomeController(config.Config)
 	authController := controller.NewAuthController(config.Config, authService, config.Log, config.CookieAuth)
+	dashboardController := controller.NewDashboardController(dashboardService, config.Log)
 	typeController := controller.NewTypeController(typeService, config.Log)
 	provinceController := controller.NewProvinceController(provinceService, config.Log)
 	cityController := controller.NewCityController(cityService, config.Log)
@@ -51,16 +54,17 @@ func Bootstrap(config *BootstrapConfig) {
 	itemController := controller.NewItemController(itemService, config.Log)
 
 	routeConfig := route.RouteConfig{
-		App:                config.App,
-		JWTMiddleware:      &jwtMiddleware,
-		SessionMiddleware:  &sessionMiddleware,
-		HomeController:     homeController,
-		AuthController:     authController,
-		TypeController:     typeController,
-		ProvinceController: provinceController,
-		CityController:     cityController,
-		VendorController:   vendorController,
-		ItemController:     itemController,
+		App:                 config.App,
+		JWTMiddleware:       &jwtMiddleware,
+		SessionMiddleware:   &sessionMiddleware,
+		HomeController:      homeController,
+		AuthController:      authController,
+		DashboardController: dashboardController,
+		TypeController:      typeController,
+		ProvinceController:  provinceController,
+		CityController:      cityController,
+		VendorController:    vendorController,
+		ItemController:      itemController,
 	}
 	routeConfig.Setup()
 }
