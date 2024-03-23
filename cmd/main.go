@@ -13,16 +13,16 @@ func main() {
 	db := config.NewDatabase(viperConfig, log)
 	jwt := config.NewJWT(viperConfig)
 	validator := config.NewValidator()
-	cookieSession := config.NewAuthSession()
+	cookieAuth := config.NewCookieAuth(viperConfig)
 
 	config.Bootstrap(&config.BootstrapConfig{
-		App:           app,
-		Config:        viperConfig,
-		Log:           log,
-		DB:            db,
-		JWT:           jwt,
-		Validator:     validator,
-		SessionCookie: cookieSession,
+		App:        app,
+		Config:     viperConfig,
+		Log:        log,
+		DB:         db,
+		JWT:        jwt,
+		Validator:  validator,
+		CookieAuth: cookieAuth,
 	})
 
 	port := viperConfig.GetString("APP_PORT")

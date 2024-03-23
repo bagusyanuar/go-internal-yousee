@@ -1,12 +1,16 @@
 package config
 
-import "github.com/gofiber/fiber/v2/middleware/session"
+import (
+	"github.com/bagusyanuar/go-internal-yousee/common"
+	"github.com/spf13/viper"
+)
 
-func NewAuthSession() *session.Store {
-	config := session.Config{
-		CookiePath: "/",
-		KeyLookup:  "cookie:authentication-session",
+func NewCookieAuth(viper *viper.Viper) *common.CookieAuthConfig {
+	maxAge := viper.GetInt("COOKIE_AUTH_AGE")
+	secretKey := viper.GetString("COOKIE_AUTH_SECRET")
+	return &common.CookieAuthConfig{
+		MaxAge:     maxAge,
+		SecretKey:  secretKey,
+		CookieName: "authentication-session",
 	}
-	store := session.New(config)
-	return store
 }

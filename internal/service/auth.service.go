@@ -2,50 +2,81 @@ package service
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/entity"
 	"github.com/bagusyanuar/go-internal-yousee/internal/model"
 	"github.com/bagusyanuar/go-internal-yousee/internal/repositories"
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
-	"gorm.io/gorm"
 )
 
 type (
 	AuthService interface {
-		SignIn(ctx context.Context, request *model.AuthRequest) (*model.AuthResponse, error)
+		SignIn(ctx context.Context, request *model.AuthRequest) (model.InterfaceResponse[*model.AuthResponse], *entity.User)
+		ValidateFormRequest(ctx context.Context, request *model.AuthRequest) model.InterfaceResponse[any]
 	}
 
-	auth struct {
+	authStruct struct {
 		AuthRepository repositories.AuthRepository
 		JWT            *common.JWT
+		Validator      *validator.Validate
 	}
 )
 
 // SignIn implements AuthServiceUsecase.
-func (service *auth) SignIn(ctx context.Context, request *model.AuthRequest) (*model.AuthResponse, error) {
-	username := request.Username
-	response := new(model.AuthResponse)
-	user, err := service.AuthRepository.SignIn(ctx, username)
-	if err != nil {
-		if errors.Is(gorm.ErrRecordNotFound, err) {
-			return response, errors.New("user not found")
-		}
-		return response, err
+func (service *authStruct) SignIn(ctx context.Context, request *model.AuthRequest) (model.InterfaceResponse[*model.AuthResponse], *entity.User) {
+	response := model.InterfaceResponse[*model.AuthResponse]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrUnknown,
 	}
 
+	username := request.Username
+
+	repositoryResponse := service.AuthRepository.SignIn(ctx, username)
+	if repositoryResponse.Error != nil {
+		response.Status = repositoryResponse.Status
+		response.Error = repositoryResponse.Error
+		return response, nil
+	}
+
+	user := repositoryResponse.Data
 	accessToken, err := service.createToken(service.JWT, user)
 
 	if err != nil {
-		return response, errors.New("failed to generate access token")
+		response.Error = common.ErrGenerateToken
+		return response, nil
 	}
-	response.AccessToken = accessToken
-	return response, nil
+
+	response.Status = common.StatusOK
+	response.Error = nil
+	response.Data = &model.AuthResponse{
+		AccessToken: accessToken,
+	}
+	return response, user
 }
 
-func (service *auth) createToken(cfg *common.JWT, user *entity.User) (string, error) {
+// ValidateFormRequest implements AuthService.
+func (service *authStruct) ValidateFormRequest(ctx context.Context, request *model.AuthRequest) model.InterfaceResponse[any] {
+	response := model.InterfaceResponse[any]{
+		Status: common.StatusInternalServerError,
+		Error:  common.ErrValidateRequest,
+	}
+
+	err, msg := common.Validate(service.Validator, request)
+	if err != nil {
+		response.Status = common.StatusBadRequest
+		response.Error = err
+		response.Data = msg
+		return response
+	}
+	response.Status = common.StatusOK
+	response.Error = nil
+	return response
+}
+
+func (service *authStruct) createToken(cfg *common.JWT, user *entity.User) (string, error) {
 	JWTSignInMethod := jwt.SigningMethodHS256
 	exp := time.Now().Add(time.Minute * time.Duration(cfg.Exp))
 	claims := common.JWTClaims{
@@ -60,9 +91,10 @@ func (service *auth) createToken(cfg *common.JWT, user *entity.User) (string, er
 	return token.SignedString([]byte(cfg.SignatureKey))
 }
 
-func NewAuthService(authRepository repositories.AuthRepository, jwt *common.JWT) AuthService {
-	return &auth{
+func NewAuthService(authRepository repositories.AuthRepository, jwt *common.JWT, validator *validator.Validate) AuthService {
+	return &authStruct{
 		AuthRepository: authRepository,
 		JWT:            jwt,
+		Validator:      validator,
 	}
 }

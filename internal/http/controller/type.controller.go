@@ -21,6 +21,7 @@ func NewTypeController(typeService service.TypeService, log *logrus.Logger) *Typ
 }
 
 func (c *TypeController) FindAll(ctx *fiber.Ctx) error {
+	rbac := ctx.Locals("rbac")
 	param := ctx.Query("name")
 	page := ctx.QueryInt("page")
 	perPage := ctx.QueryInt("per_page")
@@ -32,6 +33,8 @@ func (c *TypeController) FindAll(ctx *fiber.Ctx) error {
 			PerPage: perPage,
 		},
 	}
+
+	c.Log.Warnf("user : %+v", rbac)
 	response := c.TypeService.FindAll(ctx.UserContext(), queryString)
 	if response.Error != nil {
 		return common.JSONFromError(ctx, response.Status, response.Error, nil)

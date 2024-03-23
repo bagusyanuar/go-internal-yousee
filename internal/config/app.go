@@ -9,25 +9,24 @@ import (
 	"github.com/bagusyanuar/go-internal-yousee/internal/service"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
 type BootstrapConfig struct {
-	App           *fiber.App
-	DB            *gorm.DB
-	Log           *logrus.Logger
-	Config        *viper.Viper
-	JWT           *common.JWT
-	Validator     *validator.Validate
-	SessionCookie *session.Store
+	App        *fiber.App
+	DB         *gorm.DB
+	Log        *logrus.Logger
+	Config     *viper.Viper
+	JWT        *common.JWT
+	Validator  *validator.Validate
+	CookieAuth *common.CookieAuthConfig
 }
 
 func Bootstrap(config *BootstrapConfig) {
-	sessionMiddleware := middleware.NewSessionMiddleware(config.SessionCookie)
 	jwtMiddleware := middleware.NewJWTMiddleware(config.JWT)
+	sessionMiddleware := middleware.NewSessionMiddleware(config.CookieAuth)
 
 	authRepository := repositories.NewAuthRepository(config.DB, config.Log)
 	typeRepository := repositories.NewTypeRepository(config.DB, config.Log)
@@ -36,7 +35,7 @@ func Bootstrap(config *BootstrapConfig) {
 	vendorRepository := repositories.NewVendorRepository(config.DB, config.Log)
 	itemRepository := repositories.NewItemRepository(config.DB, config.Log)
 
-	authService := service.NewAuthService(authRepository, config.JWT)
+	authService := service.NewAuthService(authRepository, config.JWT, config.Validator)
 	typeService := service.NewItemTypeService(typeRepository, config.Log, config.Validator)
 	provinceService := service.NewProvinceService(provinceRepository, config.Log)
 	cityService := service.NewCityService(cityRepository, config.Log)
@@ -44,7 +43,7 @@ func Bootstrap(config *BootstrapConfig) {
 	itemService := service.NewItemService(itemRepository, config.Log, config.Validator)
 
 	homeController := controller.NewHomeController(config.Config)
-	authController := controller.NewAuthController(config.Config, authService, config.Log, config.SessionCookie)
+	authController := controller.NewAuthController(config.Config, authService, config.Log, config.CookieAuth)
 	typeController := controller.NewTypeController(typeService, config.Log)
 	provinceController := controller.NewProvinceController(provinceService, config.Log)
 	cityController := controller.NewCityController(cityService, config.Log)
