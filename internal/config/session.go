@@ -9,7 +9,7 @@ func NewCookieAuth(viper *viper.Viper) *common.CookieAuthConfig {
 	maxAge := viper.GetInt("COOKIE_AUTH_AGE")
 	secretKey := viper.GetString("COOKIE_AUTH_SECRET")
 	return &common.CookieAuthConfig{
-		MaxAge:     maxAge,
+		MaxAge:     (60 * maxAge),
 		SecretKey:  secretKey,
 		CookieName: "authentication-session",
 	}
