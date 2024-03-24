@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/bagusyanuar/go-internal-yousee/common"
@@ -30,50 +29,34 @@ func (service *dashboardStruct) GetDashboardStatisticInfo(ctx context.Context) m
 		Error:  common.ErrUnknown,
 	}
 
-	// var chItemCount = make(chan int64)
-	// var chVendorCount = make(chan int64)
-
-	// var wg sync.WaitGroup
-	// wg.Add(2)
-	// go service.doCountItem(&wg, chItemCount)
-	// go service.doCountVendor(&wg, chVendorCount)
-	// r1 := service.DashboardRepository.GetCountItem(ctx)
-	// if r1.Error != nil {
-	// 	response.Status = r1.Status
-	// 	response.Error = r1.Error
-	// 	return response
-	// }
-	// r2 := service.DashboardRepository.GetCountVendor(ctx)
-	// if r1.Error != nil {
-	// 	response.Status = r2.Status
-	// 	response.Error = r2.Error
-	// 	return response
-	// }
-
-	// go func() {
-	// 	wg.Wait()
-	// }()
 	var itemCount int64
 	var vendorCount int64
-	var g errgroup.Group
-	g.Go(func() error {
-		val, err := service.doCountItemWithError()
-		if err == nil {
-			itemCount = val
-			return nil
+	serviceContext, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	eg, errorGroupCtx := errgroup.WithContext(serviceContext)
+
+	eg.Go(func() error {
+		val, err := service.doCountItemWithError(errorGroupCtx)
+		if err != nil {
+			cancel()
+			return err
 		}
-		return err
+		service.Log.Warnf("do count item")
+		itemCount = val
+		return nil
 	})
-	g.Go(func() error {
-		val, err := service.doCountVendorWithError()
-		if err == nil {
-			vendorCount = val
-			return nil
+	eg.Go(func() error {
+		val, err := service.doCountVendorWithError(errorGroupCtx)
+		if err != nil {
+			cancel()
+			return err
 		}
-		return err
+		service.Log.Warnf("do count vendor")
+		vendorCount = val
+		return nil
 	})
 
-	if err := g.Wait(); err != nil {
+	if err := eg.Wait(); err != nil {
 		response.Error = err
 		response.Status = common.StatusInternalServerError
 		return response
@@ -95,37 +78,16 @@ func (service *dashboardStruct) GetDashboardStatisticInfo(ctx context.Context) m
 	return response
 }
 
-func (service *dashboardStruct) doCountItem(wg *sync.WaitGroup, value chan int64) {
-	defer func() {
-		close(value)
-		wg.Done()
-	}()
-	time.Sleep(time.Millisecond * 300)
-	value <- 10
-	service.Log.Warnf("do count item")
-}
-
-func (service *dashboardStruct) doCountItemWithError() (int64, error) {
-	time.Sleep(time.Millisecond * 300)
-	service.Log.Warnf("do count item")
+func (service *dashboardStruct) doCountItemWithError(ctx context.Context) (int64, error) {
+	time.Sleep(time.Millisecond * 400)
 	return 10, common.ErrUnknown
 }
 
-func (service *dashboardStruct) doCountVendorWithError() (int64, error) {
-	time.Sleep(time.Millisecond * 500)
-	service.Log.Warnf("do count vendor")
+func (service *dashboardStruct) doCountVendorWithError(ctx context.Context) (int64, error) {
+	time.Sleep(time.Millisecond * 800)
 	return 15, nil
 }
 
-func (service *dashboardStruct) doCountVendor(wg *sync.WaitGroup, value chan int64) {
-	defer func() {
-		close(value)
-		wg.Done()
-	}()
-	time.Sleep(time.Millisecond * 500)
-	value <- 15
-	service.Log.Warnf("do count vendor")
-}
 func NewDashboardService(dashboardRepository repositories.DashboardRepository, log *logrus.Logger) DashboardService {
 	return &dashboardStruct{
 		DashboardRepository: dashboardRepository,

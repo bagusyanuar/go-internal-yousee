@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/entity"
@@ -29,7 +28,7 @@ func (c *SessionMiddleware) CookieAuth() fiber.Handler {
 func (c *SessionMiddleware) Verify() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		val := ctx.Cookies(c.CookieAuthConfig.CookieName)
-		fmt.Printf("session value : %+v", val)
+		// fmt.Printf("session value : %+v", val)
 		if val == "" {
 			return common.JSONUnauthorized(ctx, "unauthorized", nil)
 		}
