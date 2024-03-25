@@ -2,15 +2,12 @@ package service
 
 import (
 	"context"
-	"errors"
-	"math/rand"
-	"sync"
-	"time"
 
 	"github.com/bagusyanuar/go-internal-yousee/common"
 	"github.com/bagusyanuar/go-internal-yousee/internal/model"
 	"github.com/bagusyanuar/go-internal-yousee/internal/repositories"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 )
 
 type (
@@ -26,8 +23,6 @@ type (
 
 // GetDashboardStatisticInfo implements DashboardService.
 func (service *dashboardStruct) GetDashboardStatisticInfo(ctx context.Context) model.InterfaceResponse[[]model.DashboardStatisticInfoResponse] {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	response := model.InterfaceResponse[[]model.DashboardStatisticInfoResponse]{
 		Status: common.StatusInternalServerError,
 		Error:  common.ErrUnknown,
@@ -35,25 +30,44 @@ func (service *dashboardStruct) GetDashboardStatisticInfo(ctx context.Context) m
 
 	var itemCount int64
 	var vendorCount int64
-	var wg sync.WaitGroup
-	chanErrors := make(chan error, 4)
-	wg.Add(4)
+	eg, ctx := errgroup.WithContext(ctx)
 
-	go service.doCountItemWithError(&wg, chanErrors, false, cancel, ctx, 1)
-	go service.doCountItemWithError(&wg, chanErrors, true, cancel, ctx, 2)
-	go service.doCountItemWithError(&wg, chanErrors, false, cancel, ctx, 3)
-	go service.doCountItemWithError(&wg, chanErrors, false, cancel, ctx, 4)
-	go func() {
-		wg.Wait()
-		close(chanErrors)
-	}()
+	eg.Go(func() error {
+		for {
+			select {
+			case <-ctx.Done():
+				service.Log.Warnf("Sleep 1 cancel..................")
+				return nil
+			default:
+				v, e := service.doJob(ctx, 400)
+				itemCount = v
+				service.Log.Warnf("Sleep 1 go..................")
+				return e
+			}
+		}
 
-	select {
-	case <-ctx.Done():
-		response.Error = ctx.Err()
-	case err := <-chanErrors:
+	})
+
+	eg.Go(func() error {
+		for {
+			select {
+			case <-ctx.Done():
+				service.Log.Warnf("Sleep 2 cancel..................")
+				return nil
+			default:
+				v, e := service.doJob(ctx, 200)
+				itemCount = v
+				service.Log.Warnf("Sleep 2 go..................")
+				return e
+			}
+		}
+	})
+
+	if err := eg.Wait(); err != nil {
 		response.Error = err
+		return response
 	}
+
 	var data []model.DashboardStatisticInfoResponse
 	data = append(data, model.DashboardStatisticInfoResponse{
 		Name:  "item",
@@ -70,27 +84,12 @@ func (service *dashboardStruct) GetDashboardStatisticInfo(ctx context.Context) m
 	return response
 }
 
-func (service *dashboardStruct) doCountItemWithError(wg *sync.WaitGroup, err chan error, stat bool, cancel context.CancelFunc, ctx context.Context, key int) {
-	defer wg.Done()
-	if stat {
-		e := errors.New("asd")
-		select {
-		case err <- e:
-			cancel()
-			return
-		case <-ctx.Done():
-			return
-		}
-	} else {
-		service.Log.Warnf("success fetch %+v", key)
+func (service *dashboardStruct) doJob(ctx context.Context, key int) (int64, error) {
+	// time.Sleep(time.Duration(key) * time.Millisecond)
+	if key > 300 {
+		return 0, common.ErrBadRequest
 	}
-}
-
-func (service *dashboardStruct) doCountVendorWithError(ctx context.Context) (int64, error) {
-	// time.Sleep(time.Millisecond * 800)
-	r := rand.Intn(100)
-	time.Sleep(time.Duration(r) * time.Millisecond)
-	return 15, common.ErrUnknown
+	return 0, nil
 }
 
 func NewDashboardService(dashboardRepository repositories.DashboardRepository, log *logrus.Logger) DashboardService {
