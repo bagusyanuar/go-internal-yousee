@@ -30,37 +30,28 @@ func (service *dashboardStruct) GetDashboardStatisticInfo(ctx context.Context) m
 
 	var itemCount int64
 	var vendorCount int64
-	eg, ctx := errgroup.WithContext(ctx)
+	var eg errgroup.Group
 
 	eg.Go(func() error {
-		for {
-			select {
-			case <-ctx.Done():
-				service.Log.Warnf("Sleep 1 cancel..................")
-				return nil
-			default:
-				v, e := service.doJob(ctx, 400)
-				itemCount = v
-				service.Log.Warnf("Sleep 1 go..................")
-				return e
-			}
+		repositoryResponse := service.DashboardRepository.GetCountItem(ctx)
+		if repositoryResponse.Error != nil {
+			return repositoryResponse.Error
 		}
-
+		itemCount = repositoryResponse.Data
+		response.Error = repositoryResponse.Error
+		response.Status = repositoryResponse.Status
+		return nil
 	})
 
 	eg.Go(func() error {
-		for {
-			select {
-			case <-ctx.Done():
-				service.Log.Warnf("Sleep 2 cancel..................")
-				return nil
-			default:
-				v, e := service.doJob(ctx, 200)
-				itemCount = v
-				service.Log.Warnf("Sleep 2 go..................")
-				return e
-			}
+		repositoryResponse := service.DashboardRepository.GetCountVendor(ctx)
+		if repositoryResponse.Error != nil {
+			return repositoryResponse.Error
 		}
+		vendorCount = repositoryResponse.Data
+		response.Error = repositoryResponse.Error
+		response.Status = repositoryResponse.Status
+		return nil
 	})
 
 	if err := eg.Wait(); err != nil {
@@ -82,14 +73,6 @@ func (service *dashboardStruct) GetDashboardStatisticInfo(ctx context.Context) m
 	response.Data = data
 	response.Error = nil
 	return response
-}
-
-func (service *dashboardStruct) doJob(ctx context.Context, key int) (int64, error) {
-	// time.Sleep(time.Duration(key) * time.Millisecond)
-	if key > 300 {
-		return 0, common.ErrBadRequest
-	}
-	return 0, nil
 }
 
 func NewDashboardService(dashboardRepository repositories.DashboardRepository, log *logrus.Logger) DashboardService {
