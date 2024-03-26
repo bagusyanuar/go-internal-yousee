@@ -84,7 +84,9 @@ func (service *authStruct) createToken(cfg *common.JWT, user *entity.User) (stri
 			Issuer:    cfg.Issuer,
 			ExpiresAt: jwt.NewNumericDate(exp),
 		},
-		UserID: user.ID,
+		// UserID:   user.ID,
+		Username: user.Username,
+		Role:     "admin",
 	}
 
 	token := jwt.NewWithClaims(JWTSignInMethod, claims)
