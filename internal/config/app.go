@@ -25,7 +25,7 @@ type BootstrapConfig struct {
 }
 
 func Bootstrap(config *BootstrapConfig) {
-	jwtMiddleware := middleware.NewJWTMiddleware(config.JWT)
+	jwtMiddleware := middleware.NewJWTMiddleware(config.JWT, config.Log)
 	sessionMiddleware := middleware.NewSessionMiddleware(config.CookieAuth)
 
 	authRepository := repositories.NewAuthRepository(config.DB, config.Log)
