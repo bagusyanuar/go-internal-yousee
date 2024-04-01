@@ -38,7 +38,7 @@ func NewFiber() *fiber.App {
 	app.Use(recover.New())
 	app.Use(cors.New(cors.Config{
 		AllowHeaders:     "Origin, Content-Type, Accept, Content-Length, Accept-Language, Accept-Encoding, Connection, Access-Control-Allow-Origin, Access-Control-Allow-Headers",
-		AllowOrigins:     "*",
+		AllowOrigins:     "http://127.0.0.1:3000",
 		AllowCredentials: true,
 		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 	}))
