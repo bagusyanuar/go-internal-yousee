@@ -15,6 +15,7 @@ type JWTMiddleware struct {
 func NewJWTMiddleware(config *common.JWT, log *logrus.Logger) JWTMiddleware {
 	return JWTMiddleware{
 		Config: config,
+		Log:    log,
 	}
 }
 
